@@ -10,8 +10,6 @@ export default function Home() {
   const [events, setEvents] = useState<NormalizedEvent[]>([]);
   const [userLocation, setUserLocation] = useState<{ city?: string; country?: string }>({});
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'pro' | 'premium'>('free');
-  const [selectedEvent, setSelectedEvent] = useState<NormalizedEvent | null>(null);
-  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Navigation */}
@@ -97,9 +95,7 @@ export default function Home() {
 
           <div className="flex gap-8">
             {/* Left Panel - Search */}
-            <div className={`bg-white rounded-2xl p-6 shadow-lg transition-all duration-300 ${
-              isSidePanelOpen ? 'w-1/3' : 'w-1/2'
-            }`}>
+            <div className="bg-white rounded-2xl p-6 shadow-lg w-1/2">
               <h3 className="text-lg font-semibold mb-4 text-gray-900">Search Events</h3>
               <EventSearch
                 onEventsFound={setEvents}
@@ -133,93 +129,18 @@ export default function Home() {
             </div>
 
             {/* Map */}
-            <div className={`bg-white rounded-2xl p-6 shadow-lg transition-all duration-300 ${
-              isSidePanelOpen ? 'w-1/3' : 'w-1/2'
-            }`}>
+            <div className="bg-white rounded-2xl p-6 shadow-lg w-1/2">
               <h3 className="text-lg font-semibold mb-4 text-gray-900">Event Map</h3>
               <div className="h-96 rounded-xl overflow-hidden">
                 <Map
                   className="w-full h-full"
                   events={events}
                   onLocationUpdate={setUserLocation}
-                  onEventSelect={(event) => {
-                    setSelectedEvent(event);
-                    setIsSidePanelOpen(true);
-                  }}
                 />
               </div>
             </div>
 
-            {/* Side Panel */}
-            {isSidePanelOpen && (
-              <div className="w-1/3 bg-white rounded-2xl p-6 shadow-lg transition-all duration-300">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Event Details</h3>
-                  <button
-                    onClick={() => setIsSidePanelOpen(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    ✕
-                  </button>
-                </div>
 
-                {selectedEvent ? (
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-xl font-bold text-gray-900 mb-2">
-                        {selectedEvent.title}
-                      </h4>
-                      {selectedEvent.venue && (
-                        <p className="text-gray-600 flex items-center">
-                          <span className="mr-2">📍</span>
-                          {selectedEvent.venue}
-                        </p>
-                      )}
-                    </div>
-
-                    {selectedEvent.startsAt && (
-                      <div>
-                        <p className="text-sm text-gray-500 mb-1">Date & Time</p>
-                        <p className="text-gray-900">
-                          {new Date(selectedEvent.startsAt).toLocaleString(undefined, {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedEvent.description && (
-                      <div>
-                        <p className="text-sm text-gray-500 mb-1">Description</p>
-                        <p className="text-gray-700">{selectedEvent.description}</p>
-                      </div>
-                    )}
-
-                    {selectedEvent.url && (
-                      <div className="pt-4">
-                        <a
-                          href={selectedEvent.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors text-center block"
-                        >
-                          View Event Details →
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    Click on an event marker to view details
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </section>

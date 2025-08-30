@@ -26,27 +26,7 @@ function getPlanLimits(plan: string) {
   }
 }
 
-function filterEventsByRadius(events: NormalizedEvent[], centerLat: number, centerLng: number, radiusMiles: number | null) {
-  if (!radiusMiles) return events; // unlimited radius
 
-  const filtered = events.filter(event => {
-    if (!event.lat || !event.lng) return false;
-
-    // Calculate distance using Haversine formula
-    const R = 3959; // Earth's radius in miles
-    const dLat = (event.lat - centerLat) * Math.PI / 180;
-    const dLon = (event.lng - centerLng) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(centerLat * Math.PI / 180) * Math.cos(event.lat * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distance = R * c;
-
-    return distance <= radiusMiles;
-  });
-
-  return filtered;
-}
 
 export async function POST(req: Request) {
   try {

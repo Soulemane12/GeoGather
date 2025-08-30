@@ -60,10 +60,9 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [city, setCity] = useState<string | undefined>(undefined);
-  const [country, setCountry] = useState<string | undefined>(undefined);
 
-  const getUserLocation = () => {
+
+  const getUserLocation = useCallback(() => {
     setLoading(true);
     setError(null);
 
@@ -84,8 +83,6 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
             if (MAPBOX_ACCESS_TOKEN) {
               reverseGeocodeCity(latitude, longitude, MAPBOX_ACCESS_TOKEN)
                 .then(({ city, country }) => {
-                  if (city) setCity(city);
-                  if (country) setCountry(country);
                   onLocationUpdate?.({ city, country });
                 })
                 .catch(() => {});
@@ -109,9 +106,9 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
       setLoading(false);
       setLocation({ lat: 40.7128, lng: -74.0060 }); // NYC fallback
     }
-  };
+  }, [onLocationUpdate]);
 
-  useEffect(() => { getUserLocation(); }, []);
+  useEffect(() => { getUserLocation(); }, [getUserLocation]);
 
   // Update GeoJSON source + fit bounds
   const updateEventLayer = useCallback((evs: NormalizedEvent[]) => {
@@ -323,7 +320,7 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
         map.current = null;
       }
     };
-  }, [location]);
+  }, [location]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update the layer when events arrive
   useEffect(() => {
