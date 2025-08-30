@@ -98,7 +98,7 @@ export default function EventDetailsPanel({ event, isOpen, onClose }: EventDetai
             {/* Event Details */}
             <div className="p-4">
               {/* Title */}
-              <h1 className="text-xl font-bold text-gray-900 mb-3 leading-tight">
+              <h1 className="text-lg font-bold text-gray-900 mb-4 leading-tight">
                 {event.title}
               </h1>
 
@@ -109,7 +109,7 @@ export default function EventDetailsPanel({ event, isOpen, onClose }: EventDetai
                     <span className="text-blue-600 mr-2">📅</span>
                     <span className="text-xs font-medium text-blue-800">Date & Time</span>
                   </div>
-                  <p className="text-sm font-semibold text-gray-900">{dateInfo.short}</p>
+                  <p className="text-base font-semibold text-gray-900">{dateInfo.short}</p>
                 </div>
               )}
 
@@ -120,7 +120,7 @@ export default function EventDetailsPanel({ event, isOpen, onClose }: EventDetai
                     <span className="text-emerald-600 mr-2">📍</span>
                     <span className="text-xs font-medium text-emerald-800">Venue</span>
                   </div>
-                  <p className="text-sm font-semibold text-gray-900">{event.venue}</p>
+                  <p className="text-base font-semibold text-gray-900">{event.venue}</p>
                   {event.city && (
                     <p className="text-xs text-gray-600 mt-1">{event.city}</p>
                   )}
@@ -134,22 +134,11 @@ export default function EventDetailsPanel({ event, isOpen, onClose }: EventDetai
                     <span className="mr-2">📝</span>
                     Description
                   </h3>
-                  <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">{event.description}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{event.description}</p>
                 </div>
               )}
 
-              {/* Location Coordinates */}
-              {event.lat && event.lng && (
-                <div className="mb-4 p-3 bg-gray-50 rounded-xl">
-                  <div className="flex items-center mb-1">
-                    <span className="text-gray-600 mr-2">🗺️</span>
-                    <span className="text-xs font-medium text-gray-700">Location</span>
-                  </div>
-                  <p className="text-xs text-gray-600 font-mono">
-                    {event.lat.toFixed(4)}, {event.lng.toFixed(4)}
-                  </p>
-                </div>
-              )}
+
 
               {/* Action Buttons */}
               <div className="space-y-2">
