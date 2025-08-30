@@ -152,7 +152,13 @@ export default function Map({ className = '' }: MapProps) {
     if (location) bounds.extend([location.lng, location.lat]);
 
     if (!bounds.isEmpty()) {
-      console.log(`Added ${valid} event markers; fitting bounds…`);
+      const boundsArray = bounds.toArray();
+      console.log(`Added ${valid} event markers; fitting bounds:`, boundsArray);
+      console.log('Your location:', location ? [location.lng, location.lat] : 'null');
+      console.log('Bounds span:', {
+        latSpan: Math.abs(boundsArray[1][1] - boundsArray[0][1]),
+        lngSpan: Math.abs(boundsArray[1][0] - boundsArray[0][0])
+      });
       map.current.fitBounds(bounds, { padding: 80, duration: 800 });
     } else {
       console.log('No valid event coordinates to fit.');
