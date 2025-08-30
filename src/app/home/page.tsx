@@ -9,21 +9,21 @@ export default function HomePage() {
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
       {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+      <nav className="bg-black/80 backdrop-blur-sm border-b border-gray-800 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-gray-800 bg-clip-text text-transparent">
                 VibeMap
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Link href="/map" className="text-gray-600 hover:text-blue-600 transition-colors">
+              <Link href="/map" className="text-gray-300 hover:text-orange-500 transition-colors">
                 Map
               </Link>
-              <Link href="/" className="text-gray-600 hover:text-blue-600 transition-colors">
+              <Link href="/" className="text-gray-300 hover:text-orange-500 transition-colors">
                 Home
               </Link>
             </div>
@@ -36,18 +36,18 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
             Discover Events
-            <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-orange-500 to-gray-800 bg-clip-text text-transparent">
               Near You
             </span>
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-700 mb-8 max-w-3xl mx-auto">
             Find the best concerts, shows, and events in your area with AI-powered search.
             From jazz nights to rock concerts, discover what&apos;s happening around you.
           </p>
           <div className="flex flex-col items-center space-y-4">
             <Link
               href="/map"
-              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-orange-500 to-gray-800 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-black transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               🗺️ Start Exploring
             </Link>
@@ -55,41 +55,39 @@ export default function HomePage() {
         </div>
       </section>
 
-
-
       {/* Features Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-100">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">
             Why Choose VibeMap?
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🤖</span>
+            <div className="text-center p-6 bg-white rounded-2xl shadow-md">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl text-orange-600">🤖</span>
               </div>
-              <h3 className="text-xl font-semibold mb-3">AI-Powered Search</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-semibold mb-3 text-gray-900">AI-Powered Search</h3>
+              <p className="text-gray-700">
                 Use natural language to find events. Search for &ldquo;jazz tonight&rdquo; or &ldquo;rock concerts this weekend&rdquo;
                 and let our AI understand exactly what you&apos;re looking for.
               </p>
             </div>
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🗺️</span>
+            <div className="text-center p-6 bg-white rounded-2xl shadow-md">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl text-gray-700">🗺️</span>
               </div>
-              <h3 className="text-xl font-semibold mb-3">Interactive Map</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-semibold mb-3 text-gray-900">Interactive Map</h3>
+              <p className="text-gray-700">
                 See events plotted on an interactive map with real-time location data.
                 Click on markers to get event details and ticket information.
               </p>
             </div>
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🎫</span>
+            <div className="text-center p-6 bg-white rounded-2xl shadow-md">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl text-orange-600">🎫</span>
               </div>
-              <h3 className="text-xl font-semibold mb-3">Multi-Source Events</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-semibold mb-3 text-gray-900">Multi-Source Events</h3>
+              <p className="text-gray-700">
                 Get events from multiple sources including Ticketmaster and Google Events.
                 Never miss out on what&apos;s happening in your area.
               </p>
@@ -99,22 +97,22 @@ export default function HomePage() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-100">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
               Choose Your Plan
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-700 max-w-2xl mx-auto">
               Select the perfect plan for your event discovery needs. Start free and upgrade anytime.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {/* Free Plan */}
-            <div className={`bg-white rounded-2xl p-8 shadow-lg border-2 transition-all duration-300 border-gray-200`}>
+            <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-200 transition-all duration-300">
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Free</h3>
-                <p className="text-gray-600">Perfect for casual event discovery</p>
+                <p className="text-gray-700">Perfect for casual event discovery</p>
               </div>
               <div className="mb-8 text-center">
                 <div className="text-5xl font-bold text-gray-900 mb-2">$0</div>
@@ -122,43 +120,43 @@ export default function HomePage() {
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">5-mile search radius</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">5-mile search radius</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">AI-powered search</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">AI-powered search</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">Interactive map with clusters</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">Interactive map with clusters</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">Up to 50 events per search</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">Up to 50 events per search</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-red-400 mr-3 text-lg">✗</span>
-                  <span className="text-gray-400">Advanced filters</span>
+                  <span className="text-gray-400 mr-3 text-lg">✗</span>
+                  <span className="text-gray-500">Advanced filters</span>
                 </li>
               </ul>
               <button
-                className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200`}
+                className="w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 bg-gray-200 text-gray-800 hover:bg-gray-300"
               >
                 Get Started Free
               </button>
             </div>
 
             {/* Pro Plan */}
-            <div className={`bg-white rounded-2xl p-8 shadow-xl border-2 relative transform transition-all duration-300 border-blue-500`}>
+            <div className="bg-white rounded-2xl p-8 shadow-xl border-2 border-orange-500 relative transform transition-all duration-300">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                <span className="bg-gradient-to-r from-orange-500 to-gray-800 text-white px-4 py-1 rounded-full text-sm font-semibold">
                   Most Popular
                 </span>
               </div>
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Pro</h3>
-                <p className="text-gray-600">For serious event enthusiasts</p>
+                <p className="text-gray-700">For serious event enthusiasts</p>
               </div>
               <div className="mb-8 text-center">
                 <div className="text-5xl font-bold text-gray-900 mb-2">$9.99</div>
@@ -166,42 +164,42 @@ export default function HomePage() {
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">25-mile search radius</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">25-mile search radius</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">Advanced AI search & filters</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">Advanced AI search & filters</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">Real-time event updates</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">Real-time event updates</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">Up to 200 events per search</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">Up to 200 events per search</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">Personalized recommendations</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">Personalized recommendations</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">Priority support</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">Priority support</span>
                 </li>
               </ul>
               <button
-                className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700`}
+                className="w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 bg-gradient-to-r from-orange-500 to-gray-800 text-white hover:from-orange-600 hover:to-black"
               >
                 Start Pro Trial
               </button>
             </div>
 
             {/* Premium Plan */}
-            <div className={`bg-white rounded-2xl p-8 shadow-lg border-2 transition-all duration-300 border-gray-200`}>
+            <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-200 transition-all duration-300">
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Premium</h3>
-                <p className="text-gray-600">For event professionals</p>
+                <p className="text-gray-700">For event professionals</p>
               </div>
               <div className="mb-8 text-center">
                 <div className="text-5xl font-bold text-gray-900 mb-2">$19.99</div>
@@ -209,36 +207,36 @@ export default function HomePage() {
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">Unlimited search radius</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">Unlimited search radius</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">All Pro features</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">All Pro features</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">Full API access</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">Full API access</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">Unlimited events per search</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">Unlimited events per search</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">White-label solution</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">White-label solution</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">Dedicated account manager</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">Dedicated account manager</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-700">Custom integrations</span>
+                  <span className="text-orange-500 mr-3 text-lg">✓</span>
+                  <span className="text-gray-800">Custom integrations</span>
                 </li>
               </ul>
               <button
-                className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200`}
+                className="w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 bg-gray-200 text-gray-800 hover:bg-gray-300"
               >
                 Contact Sales
               </button>
@@ -248,45 +246,45 @@ export default function HomePage() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-100">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">
             How It Works
           </h2>
           <div className="grid md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold text-blue-600">
+            <div className="text-center bg-white rounded-2xl p-6 shadow-md">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold text-orange-600">
                 1
               </div>
-              <h3 className="text-lg font-semibold mb-2">Search</h3>
-              <p className="text-gray-600">
+              <h3 className="text-lg font-semibold mb-2 text-gray-900">Search</h3>
+              <p className="text-gray-700">
                 Type what you&apos;re looking for in natural language
               </p>
             </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold text-purple-600">
+            <div className="text-center bg-white rounded-2xl p-6 shadow-md">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold text-gray-700">
                 2
               </div>
-              <h3 className="text-lg font-semibold mb-2">AI Processing</h3>
-              <p className="text-gray-600">
+              <h3 className="text-lg font-semibold mb-2 text-gray-900">AI Processing</h3>
+              <p className="text-gray-700">
                 Our AI understands your intent and location
               </p>
             </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold text-green-600">
+            <div className="text-center bg-white rounded-2xl p-6 shadow-md">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold text-orange-600">
                 3
               </div>
-              <h3 className="text-lg font-semibold mb-2">Discover</h3>
-              <p className="text-gray-600">
+              <h3 className="text-lg font-semibold mb-2 text-gray-900">Discover</h3>
+              <p className="text-gray-700">
                 Find events from multiple sources in your area
               </p>
             </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold text-orange-600">
+            <div className="text-center bg-white rounded-2xl p-6 shadow-md">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold text-gray-700">
                 4
               </div>
-              <h3 className="text-lg font-semibold mb-2">Explore</h3>
-              <p className="text-gray-600">
+              <h3 className="text-lg font-semibold mb-2 text-gray-900">Explore</h3>
+              <p className="text-gray-700">
                 View events on the map and get ticket information
               </p>
             </div>
@@ -294,88 +292,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Sample Events Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">
-            Upcoming Events
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                id: 'sample-event-1',
-                title: 'Summer Jazz Festival',
-                venue: 'Central Park Amphitheater',
-                startsAt: '2024-07-15T19:00:00Z',
-                description: 'An evening of smooth jazz featuring top local and international artists.',
-                url: 'https://example.com/jazz-festival',
-                source: 'ticketmaster' as const,
-                lat: 40.7829,
-                lng: -73.9654
-              },
-              {
-                id: 'sample-event-2',
-                title: 'Rock the Night Concert',
-                venue: 'Stadium Arena',
-                startsAt: '2024-08-22T20:30:00Z',
-                description: 'An epic night of rock music with legendary bands and emerging talents.',
-                url: 'https://example.com/rock-concert',
-                source: 'serpapi' as const,
-                lat: 40.7589,
-                lng: -73.9851
-              },
-              {
-                id: 'sample-event-3',
-                title: 'Comedy Extravaganza',
-                venue: 'City Comedy Club',
-                startsAt: '2024-06-10T21:00:00Z',
-                description: 'A night of non-stop laughter with top stand-up comedians from around the country.',
-                url: 'https://example.com/comedy-show',
-                source: 'serpapi' as const,
-                lat: 40.7484,
-                lng: -73.9857
-              }
-            ].map((event) => (
-              <div 
-                key={event.id} 
-                className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all cursor-pointer"
-                onClick={() => {
-                  setSelectedEvent(event);
-                  setIsSidePanelOpen(true);
-                }}
-              >
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
-                <p className="text-gray-600 mb-2 flex items-center">
-                  <span className="mr-2">📍</span>
-                  {event.venue}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {new Date(event.startsAt).toLocaleString(undefined, {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit'
-                  })}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 to-purple-600">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-orange-500 to-gray-800">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
             Ready to Discover Amazing Events?
           </h2>
-          <p className="text-xl text-blue-100 mb-8">
+          <p className="text-xl text-orange-100 mb-8">
             Join thousands of users who are already finding the best events in their area.
           </p>
           <Link
             href="/map"
-            className="inline-flex items-center px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-gray-100 transition-all duration-200 shadow-lg"
+            className="inline-flex items-center px-8 py-4 bg-white text-gray-900 font-semibold rounded-xl hover:bg-gray-100 transition-all duration-200 shadow-lg"
           >
             🚀 Start Your Journey
           </Link>
@@ -451,18 +379,18 @@ export default function HomePage() {
       )}
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 px-4 sm:px-6 lg:px-8">
+      <footer className="bg-black text-white py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-xl font-bold mb-4">VibeMap</h3>
+              <h3 className="text-xl font-bold mb-4 text-orange-500">VibeMap</h3>
               <p className="text-gray-400">
                 Discover the best events in your area with AI-powered search.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Features</h4>
-              <ul className="space-y-2 text-gray-400">
+              <h4 className="font-semibold mb-4 text-gray-300">Features</h4>
+              <ul className="space-y-2 text-gray-500">
                 <li>AI-Powered Search</li>
                 <li>Interactive Map</li>
                 <li>Multi-Source Events</li>
@@ -470,8 +398,8 @@ export default function HomePage() {
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Plans</h4>
-              <ul className="space-y-2 text-gray-400">
+              <h4 className="font-semibold mb-4 text-gray-300">Plans</h4>
+              <ul className="space-y-2 text-gray-500">
                 <li>Free Plan</li>
                 <li>Pro Plan</li>
                 <li>Premium Plan</li>
@@ -479,8 +407,8 @@ export default function HomePage() {
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-gray-400">
+              <h4 className="font-semibold mb-4 text-gray-300">Support</h4>
+              <ul className="space-y-2 text-gray-500">
                 <li>Help Center</li>
                 <li>Contact Us</li>
                 <li>API Documentation</li>
@@ -488,7 +416,7 @@ export default function HomePage() {
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-500">
             <p>&copy; 2024 VibeMap. All rights reserved.</p>
           </div>
         </div>
