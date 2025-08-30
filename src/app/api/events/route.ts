@@ -2,147 +2,86 @@ import { NextResponse } from "next/server";
 import type { NormalizedEvent } from "@/lib/types";
 import { extractIntent } from "../providers/groq-intent";
 import { fetchTicketmaster } from "../providers/ticketmaster";
-import { fetchEventbriteSearch, fetchEventbriteOrgEvents } from "../providers/eventbrite";
+import { fetchSerpEvents } from "../providers/serp";  // NEW
 
 function dedupe(events: NormalizedEvent[]) {
   const seen = new Map<string, NormalizedEvent>();
   for (const e of events) {
-    const key = `${(e.title || "").toLowerCase()}|${e.startsAt || ""}|${(e.venue || "").toLowerCase()}`;
+    // include URL host in key to avoid cross-provider collisions on generic titles
+    const host = (() => {
+      try { return e.url ? new URL(e.url).host : ""; } catch { return ""; }
+    })();
+    const key = `${(e.title || "").toLowerCase()}|${e.startsAt || ""}|${(e.venue || "").toLowerCase()}|${host}`;
     if (!seen.has(key)) seen.set(key, e);
   }
   return [...seen.values()];
 }
 
-// optional: simple time window → range start/end
-function timeRangeFromWindow(tw: string | undefined) {
-  const now = new Date();
-  const start = new Date(now);
-  const end = new Date(now);
-
-  switch (tw) {
-    case "today":
-      start.setHours(0, 0, 0, 0);
-      end.setHours(23, 59, 59, 999);
-      break;
-    case "tonight":
-      start.setHours(17, 0, 0, 0);
-      end.setHours(23, 59, 59, 999);
-      break;
-    case "tomorrow":
-      start.setDate(start.getDate() + 1);
-      start.setHours(0, 0, 0, 0);
-      end.setDate(end.getDate() + 1);
-      end.setHours(23, 59, 59, 999);
-      break;
-    case "weekend": {
-      const day = now.getDay(); // 0 Sun ... 6 Sat
-      const daysUntilSat = (6 - day + 7) % 7;
-      const saturday = new Date(now);
-      saturday.setDate(now.getDate() + daysUntilSat);
-      saturday.setHours(0, 0, 0, 0);
-      const sunday = new Date(saturday);
-      sunday.setDate(saturday.getDate() + 1);
-      sunday.setHours(23, 59, 59, 999);
-      return {
-        rangeStartISO: saturday.toISOString(),
-        rangeEndISO: sunday.toISOString(),
-      };
-    }
-    default:
-      return {};
+// Optional: convert your extracted "time_window" into SerpAPI `when`
+function serpWhenFromIntent(tw?: string): string | undefined {
+  switch ((tw || "").toLowerCase()) {
+    case "today": return "today";
+    case "tonight": return "today"; // SerpAPI doesn't have "tonight"; "today" is closest
+    case "tomorrow": return "tomorrow";
+    case "weekend": return "this weekend";
+    default: return undefined;
   }
-
-  return {
-    rangeStartISO: start.toISOString(),
-    rangeEndISO: end.toISOString(),
-  };
 }
 
 export async function POST(req: Request) {
   try {
     const { prompt, city, country } = await req.json();
-    
-    console.log('Events API called with:', { prompt, city, country });
 
-    // Check if required environment variables are set
     if (!process.env.GROQ_API_KEY) {
-      console.error('GROQ_API_KEY not set');
-      return NextResponse.json(
-        { error: 'API configuration error: GROQ_API_KEY not set' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "API configuration error: GROQ_API_KEY not set" }, { status: 500 });
     }
-
     if (!process.env.TICKETMASTER_API_KEY) {
-      console.error('TICKETMASTER_API_KEY not set');
-      return NextResponse.json(
-        { error: 'API configuration error: TICKETMASTER_API_KEY not set' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "API configuration error: TICKETMASTER_API_KEY not set" }, { status: 500 });
     }
 
-    // 1) Ask Groq to extract intent (keywords/time, and maybe city/country if user typed them)
-    console.log('Calling Groq intent extraction...');
+    // optional, only needed if you want server-side geocoding for Serp results missing lat/lng
+    const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
+
+    // 1) Intent (keywords / time window / possible city,country overrides)
     const intent = await extractIntent(prompt ?? "", city, country);
-    console.log('Groq intent result:', intent);
 
-               const keywords = Array.isArray(intent.topic_keywords) ? intent.topic_keywords : [];
-           const keyword = (keywords.join(" ").trim() || prompt || "").slice(0, 100); // keep it tidy
-           console.log('Searching with keyword:', keyword);
+    const keywords = Array.isArray(intent.topic_keywords) ? intent.topic_keywords : [];
+    const keyword = (keywords.join(" ").trim() || prompt || "").slice(0, 100);
 
-           const timeRange = timeRangeFromWindow(String(intent.time_window));
+    const serpWhen = serpWhenFromIntent(String(intent.time_window));
+    const finalCity = typeof intent.city === "string" ? intent.city : city;
+    const finalCountry = typeof intent.country === "string" ? intent.country : country;
 
-           // Fire all providers
-           console.log('Fetching from Ticketmaster...');
-           const tmP = fetchTicketmaster({
-             keyword,
-             city: typeof intent.city === "string" ? intent.city : undefined,
-             countryCode: typeof intent.country === "string" ? intent.country : undefined,
-           });
-
-           console.log('Fetching from Eventbrite search...');
-           const ebSearchP = process.env.EVENTBRITE_TOKEN
-             ? fetchEventbriteSearch({
-                 q: keyword,
-                 city: typeof intent.city === "string" ? intent.city : undefined,
-                 country: typeof intent.country === "string" ? intent.country : undefined,
-                 within: "30mi",
-                 rangeStartISO: timeRange.rangeStartISO,
-                 rangeEndISO: timeRange.rangeEndISO,
-                 maxPages: 2,
-               })
-             : Promise.resolve<NormalizedEvent[]>([]);
-
-           console.log('Fetching from Eventbrite org...');
-           const ebOrgP = process.env.EVENTBRITE_ORG_ID && process.env.EVENTBRITE_TOKEN
-             ? fetchEventbriteOrgEvents({ orgId: process.env.EVENTBRITE_ORG_ID })
-             : Promise.resolve<NormalizedEvent[]>([]);
-
-           const [tm, ebSearch, ebOrg] = await Promise.all([tmP, ebSearchP, ebOrgP]);
-           console.log('Results:', { 
-             ticketmaster: tm.length, 
-             eventbriteSearch: ebSearch.length, 
-             eventbriteOrg: ebOrg.length 
-           });
-
-           // 3) Merge, dedupe, sort by date, and limit to 100 events
-           const merged = dedupe([...tm, ...ebSearch, ...ebOrg])
-             .sort((a, b) => (a.startsAt || "").localeCompare(b.startsAt || ""))
-             .slice(0, 100); // Increased limit since we have more sources
-
-    console.log('Final merged results:', merged.length);
-    return NextResponse.json({
-      intent,
-      events: merged,
+    // 2) Providers in parallel: Ticketmaster + SerpAPI (Google Events)
+    const tmP = fetchTicketmaster({
+      keyword,
+      city: finalCity,
+      countryCode: finalCountry,
     });
+
+    const serpP = process.env.SERPAPI_API_KEY
+      ? fetchSerpEvents({
+          q: keyword,
+          city: finalCity,
+          country: finalCountry,
+          when: serpWhen,
+          limit: 80,                // tweakable
+          mapboxToken: MAPBOX_TOKEN // for forward geocoding when coords missing
+        })
+      : Promise.resolve<NormalizedEvent[]>([]);
+
+    const [tm, serp] = await Promise.all([tmP, serpP]);
+
+    // 3) Merge, dedupe, sort, limit
+    const merged = dedupe([...tm, ...serp])
+      .sort((a, b) => (a.startsAt || "").localeCompare(b.startsAt || ""))
+      .slice(0, 120);
+
+    return NextResponse.json({ intent, events: merged });
   } catch (error) {
-    console.error('Events API error:', error);
+    console.error("Events API error:", error);
     return NextResponse.json(
-      { 
-        error: 'Failed to fetch events', 
-        details: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
-      },
+      { error: "Failed to fetch events", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
     );
   }
