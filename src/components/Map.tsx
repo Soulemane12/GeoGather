@@ -100,20 +100,21 @@ export default function Map({ className = '' }: MapProps) {
     console.log(`Found ${newEvents.length} events`);
   };
 
-  const clearEventMarkers = useCallback(() => {
-    eventMarkers.forEach(marker => marker.remove());
-    setEventMarkers([]);
-  }, [eventMarkers]);
+
 
   const addEventMarkers = useCallback((eventsToAdd: NormalizedEvent[]) => {
     if (!map.current) return;
 
-    clearEventMarkers();
+    // clear old
+    eventMarkers.forEach(m => m.remove());
     const newMarkers: mapboxgl.Marker[] = [];
 
+    // build bounds
+    const bounds = new mapboxgl.LngLatBounds();
+
     eventsToAdd.forEach(event => {
-      if (event.lat && event.lng) {
-        // Create event marker element
+      if (typeof event.lat === 'number' && typeof event.lng === 'number') {
+        // marker DOM
         const el = document.createElement('div');
         el.className = 'event-marker';
         el.style.width = '24px';
@@ -123,14 +124,13 @@ export default function Map({ className = '' }: MapProps) {
         el.style.border = '2px solid #ffffff';
         el.style.cursor = 'pointer';
         el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-        el.innerHTML = '🎵';
         el.style.display = 'flex';
         el.style.alignItems = 'center';
         el.style.justifyContent = 'center';
         el.style.fontSize = '12px';
+        el.textContent = '🎵';
 
-        // Create popup content
-        const popupContent = `
+        const popupHtml = `
           <div class="p-2 max-w-xs">
             <h3 class="font-bold text-sm mb-1">${event.title}</h3>
             ${event.venue ? `<p class="text-xs text-gray-600 mb-1">📍 ${event.venue}</p>` : ''}
@@ -139,21 +139,27 @@ export default function Map({ className = '' }: MapProps) {
           </div>
         `;
 
-        const popup = new mapboxgl.Popup({ offset: 25 })
-          .setHTML(popupContent);
-
         const marker = new mapboxgl.Marker(el)
           .setLngLat([event.lng, event.lat])
-          .setPopup(popup)
+          .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(popupHtml))
           .addTo(map.current!);
 
         newMarkers.push(marker);
+        bounds.extend([event.lng, event.lat]);
       }
     });
 
+    // also include the user location so it stays in view
+    if (location) bounds.extend([location.lng, location.lat]);
+
+    // apply bounds if we have anything
+    if (!bounds.isEmpty()) {
+      map.current.fitBounds(bounds, { padding: 80, duration: 800 });
+    }
+
     setEventMarkers(newMarkers);
-    console.log(`Added ${newMarkers.length} event markers to map`);
-  }, [clearEventMarkers]);
+    console.log(`Added ${newMarkers.length} event markers to map and fit bounds`);
+  }, [eventMarkers, location]);
 
   useEffect(() => {
     if (!location || !mapContainer.current || map.current) return;
@@ -173,16 +179,9 @@ export default function Map({ className = '' }: MapProps) {
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/standard',
-      config: {
-        basemap: {
-          lightPreset: "night"
-        }
-      },
+      style: 'mapbox://styles/mapbox/streets-v12', // Use streets style to avoid warnings
       center: [location.lng, location.lat],
-      zoom: 12,
-      bearing: 0,
-      pitch: 0
+      zoom: 12
     });
 
     // Wait for map to load before adding marker
@@ -211,6 +210,9 @@ export default function Map({ className = '' }: MapProps) {
       
       console.log('✅ Marker successfully added at:', [location.lng, location.lat]);
       
+      // Add a test marker to verify markers work
+      new mapboxgl.Marker().setLngLat([location.lng + 0.01, location.lat + 0.01]).addTo(map.current!);
+      
 
     });
 
@@ -224,7 +226,7 @@ export default function Map({ className = '' }: MapProps) {
   }, [location]); // Remove clearEventMarkers dependency
 
   useEffect(() => {
-    if (events.length > 0 && map.current && map.current.isStyleLoaded()) {
+    if (events.length > 0 && map.current) {
       addEventMarkers(events);
     }
   }, [events, addEventMarkers]);
