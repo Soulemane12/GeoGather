@@ -331,6 +331,7 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
 
   // Update the layer when events arrive
   useEffect(() => {
+    console.log('Map received events:', events.length);
     if (mapLoaded && map.current) {
       updateEventLayer(events);
     }

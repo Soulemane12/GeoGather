@@ -17,7 +17,7 @@ export default function MapPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Link href="/home" className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 VibeMap
               </Link>
             </div>
@@ -25,7 +25,7 @@ export default function MapPage() {
               <Link href="/map" className="text-blue-600 font-semibold">
                 Map
               </Link>
-              <Link href="/home" className="text-gray-600 hover:text-blue-600 transition-colors">
+              <Link href="/" className="text-gray-600 hover:text-blue-600 transition-colors">
                 Home
               </Link>
             </div>
@@ -44,6 +44,7 @@ export default function MapPage() {
           onEventsFound={setEvents}
           userCity={userLocation.city}
           userCountry={userLocation.country}
+          plan="free"
         />
       </div>
     </div>

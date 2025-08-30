@@ -43,10 +43,13 @@ export default function EventSearch({ onEventsFound, userCity, userCountry, plan
       }
 
       const data = await response.json();
-      
+
       if (data.error) {
         throw new Error(data.error);
       }
+
+      console.log('API Response:', data);
+      console.log('Events found:', data.events?.length || 0);
 
       onEventsFound(data.events || []);
     } catch (err) {
