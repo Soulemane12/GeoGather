@@ -8,6 +8,7 @@ html, body {
   margin: 0 !important;
   padding: 0 !important;
   overflow-x: hidden !important;
+  overflow-y: auto !important;
   min-height: 100vh !important;
   width: 100vw !important;
 }
@@ -15,6 +16,7 @@ html, body {
 #__next {
   min-height: 100vh !important;
   width: 100vw !important;
+  overflow-y: auto !important;
 }
 
 /* Custom map styles */
