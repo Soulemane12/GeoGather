@@ -68,7 +68,7 @@ export default function EventSearch({ onEventsFound, userCity, userCountry }: Ev
   };
 
     return (
-    <div className="fixed top-6 left-6 z-[9999] bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-200 p-6 max-w-sm" style={{ position: 'fixed', top: '24px', left: '24px', zIndex: 9999 }}>
+    <div className="fixed top-24 left-6 z-[9999] bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-200 p-6 max-w-sm">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="search" className="block text-sm font-semibold text-gray-700 mb-2">
