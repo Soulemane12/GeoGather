@@ -42,6 +42,7 @@ function eventsToGeoJSON(events: NormalizedEvent[]): FeatureCollection<Point> {
         type: 'Feature' as const,
         geometry: { type: 'Point' as const, coordinates: [e.lng as number, e.lat as number] },
         properties: {
+          id: e.id || '',
           title: e.title || '',
           venue: e.venue || '',
           startsAt: e.startsAt || '',
