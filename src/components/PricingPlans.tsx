@@ -14,7 +14,7 @@ interface PricingPlan {
 
 const plans: PricingPlan[] = [
   {
-    id: 'price_basic_monthly', // Replace with your actual Flowglad price ID
+    id: 'pricing_model_NfLrygmZ2FdnrL6Hnzc9U', // Replace with your actual Flowglad price ID
     name: 'Basic',
     price: '$9.99',
     description: 'Perfect for individual users',
@@ -26,7 +26,7 @@ const plans: PricingPlan[] = [
     ]
   },
   {
-    id: 'price_pro_monthly', // Replace with your actual Flowglad price ID
+    id: 'pricing_model_wKWhLjVCSWJMuAEGMLy7B', // Replace with your actual Flowglad price ID
     name: 'Pro',
     price: '$29.99',
     description: 'Great for power users and small teams',
@@ -41,7 +41,7 @@ const plans: PricingPlan[] = [
     popular: true
   },
   {
-    id: 'price_enterprise_monthly', // Replace with your actual Flowglad price ID
+    id: 'pricing_model_QfV379QFrUf1icjCRrqSo', // Replace with your actual Flowglad price ID
     name: 'Enterprise',
     price: '$99.99',
     description: 'For large organizations and businesses',
