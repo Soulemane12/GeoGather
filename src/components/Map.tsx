@@ -55,6 +55,7 @@ function eventsToGeoJSON(events: NormalizedEvent[]): FeatureCollection<Point> {
 export default function Map({ className = '', events = [], onLocationUpdate }: MapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const eventsRef = useRef<NormalizedEvent[]>(events);
 
   const [mapLoaded, setMapLoaded] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -279,36 +280,24 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
       map.current!.on('mouseenter', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = 'pointer'));
       map.current!.on('mouseleave', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = ''));
 
-      console.log('Setting up click event for layer:', EVENTS_LAYER_ID);
-
       // click an unclustered event → popup
-      map.current!.on('click', (e: mapboxgl.MapMouseEvent) => {
-        console.log('Map click event triggered');
-
+      const handleMapClick = (e: mapboxgl.MapMouseEvent) => {
         // Check if we clicked on an event feature
         const features = map.current!.queryRenderedFeatures(e.point, {
           layers: [EVENTS_LAYER_ID]
         });
 
-        console.log('Queried features:', features);
-
         if (features.length === 0) {
-          console.log('No event features found at click location');
           return;
         }
 
         const f = features[0];
-        console.log('Clicked feature:', f);
-
         const p = f.properties || {};
-        console.log('Feature properties:', p);
 
-        // Find the full event object from the events array
-        const event = events.find(ev => ev.id === p.id);
-        console.log('Found event:', event);
+        // Find the full event object from the current events array
+        const event = eventsRef.current.find(ev => ev.id === p.id);
 
         if (!event) {
-          console.log('Event not found in events array');
           return;
         }
 
@@ -328,7 +317,10 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
           .setLngLat([e.lngLat.lng, e.lngLat.lat])
           .setHTML(popupHtml)
           .addTo(map.current!);
-      });
+      };
+
+      // Register the click event handler
+      map.current!.on('click', handleMapClick);
 
       map.current!.on('mouseenter', EVENTS_LAYER_ID, () => (map.current!.getCanvas().style.cursor = 'pointer'));
       map.current!.on('mouseleave', EVENTS_LAYER_ID, () => (map.current!.getCanvas().style.cursor = ''));
@@ -342,7 +334,12 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
         map.current = null;
       }
     };
-  }, [location]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location]);
+
+  // Update events ref when events prop changes
+  useEffect(() => {
+    eventsRef.current = events;
+  }, [events]);
 
   // Update the layer when events arrive
   useEffect(() => {
