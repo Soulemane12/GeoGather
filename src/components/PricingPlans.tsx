@@ -14,7 +14,7 @@ interface PricingPlan {
 
 const plans: PricingPlan[] = [
   {
-    id: 'basic',
+    id: 'price_basic_monthly', // Replace with your actual Flowglad price ID
     name: 'Basic',
     price: '$9.99',
     description: 'Perfect for individual users',
@@ -26,7 +26,7 @@ const plans: PricingPlan[] = [
     ]
   },
   {
-    id: 'pro',
+    id: 'price_pro_monthly', // Replace with your actual Flowglad price ID
     name: 'Pro',
     price: '$29.99',
     description: 'Great for power users and small teams',
@@ -41,7 +41,7 @@ const plans: PricingPlan[] = [
     popular: true
   },
   {
-    id: 'enterprise',
+    id: 'price_enterprise_monthly', // Replace with your actual Flowglad price ID
     name: 'Enterprise',
     price: '$99.99',
     description: 'For large organizations and businesses',
@@ -77,7 +77,19 @@ export default function PricingPlans() {
       })
     } catch (error) {
       console.error('Error creating checkout session:', error)
-      alert('Unable to process payment at this time. Please try again later.')
+      
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('price')) {
+          alert('Price configuration error. Please check your Flowglad price IDs.')
+        } else if (error.message.includes('API')) {
+          alert('API configuration error. Please check your Flowglad setup.')
+        } else {
+          alert('Unable to process payment at this time. Please try again later.')
+        }
+      } else {
+        alert('Unable to process payment at this time. Please try again later.')
+      }
     } finally {
       setLoading(null)
     }

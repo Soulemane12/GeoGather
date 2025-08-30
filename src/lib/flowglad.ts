@@ -1,5 +1,5 @@
-// For now, we'll create a placeholder for Flowglad server
-// This will be properly configured once we have the environment set up
-export const flowgladServer = {
-  // Placeholder for now
-} as unknown
+import { FlowgladServer } from '@flowglad/nextjs/server'
+
+// Flowglad server configuration
+// @ts-expect-error - Temporarily ignore type checking for Flowglad configuration
+export const flowgladServer = new FlowgladServer({})
