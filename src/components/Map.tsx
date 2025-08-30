@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import EventSearch from './EventSearch';
+import EventDetailsPanel from './EventDetailsPanel';
 import type { NormalizedEvent } from '@/lib/types';
 import type { FeatureCollection, Point } from 'geojson';
 
@@ -60,6 +61,8 @@ export default function Map({ className = '' }: MapProps) {
   const [events, setEvents] = useState<NormalizedEvent[]>([]);
   const [city, setCity] = useState<string | undefined>(undefined);
   const [country, setCountry] = useState<string | undefined>(undefined);
+  const [selectedEvent, setSelectedEvent] = useState<NormalizedEvent | null>(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   const getUserLocation = () => {
     setLoading(true);
@@ -152,6 +155,11 @@ export default function Map({ className = '' }: MapProps) {
 
     console.log(`🟠 Plotted ${coords.length} points; ${unique.size} unique locations`);
   }, [location]);
+
+  const closePanel = () => {
+    setIsPanelOpen(false);
+    setSelectedEvent(null);
+  };
 
   // Create the map once we have a location
   useEffect(() => {
@@ -279,35 +287,23 @@ export default function Map({ className = '' }: MapProps) {
       map.current!.on('mouseenter', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = 'pointer'));
       map.current!.on('mouseleave', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = ''));
 
-      // click an unclustered event → popup
+      // click an unclustered event → open side panel
       map.current!.on('click', EVENTS_LAYER_ID, (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
         const f = e.features?.[0];
         if (!f) return;
-        const c = (f.geometry as unknown as { coordinates: [number, number] }).coordinates;
         const p = f.properties || {};
-
-        const dateHtml = p.startsAt
-          ? `<p class="text-xs text-gray-600 mb-1">📅 ${
-              new Date(String(p.startsAt)).toLocaleString(undefined, {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit'
-              })
-            }</p>`
-          : '';
-
-        const html = `
-          <div class="p-2 max-w-xs">
-            <h3 class="font-bold text-sm mb-1">${p.title || ''}</h3>
-            ${p.venue ? `<p class="text-xs text-gray-600 mb-1">📍 ${p.venue}</p>` : ''}
-            ${dateHtml}
-            ${p.url ? `<a href="${p.url}" target="_blank" class="text-blue-600 text-xs hover:underline">View Details →</a>` : ''}
-          </div>
-        `;
-
-        new mapboxgl.Popup({ offset: 12 }).setLngLat(c).setHTML(html).addTo(map.current!);
+        
+        // Find the corresponding event from our events array
+        const clickedEvent = events.find(event => 
+          event.title === p.title && 
+          event.venue === p.venue &&
+          event.startsAt === p.startsAt
+        );
+        
+        if (clickedEvent) {
+          setSelectedEvent(clickedEvent);
+          setIsPanelOpen(true);
+        }
       });
 
       map.current!.on('mouseenter', EVENTS_LAYER_ID, () => (map.current!.getCanvas().style.cursor = 'pointer'));
@@ -370,6 +366,11 @@ export default function Map({ className = '' }: MapProps) {
       <div className={`relative ${className}`}>
         <div ref={mapContainer} className="w-full h-full" />
       </div>
+      <EventDetailsPanel
+        event={selectedEvent}
+        isOpen={isPanelOpen}
+        onClose={closePanel}
+      />
     </>
   );
 }
