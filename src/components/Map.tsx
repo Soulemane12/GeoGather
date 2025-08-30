@@ -35,19 +35,19 @@ function eventsToGeoJSON(events: NormalizedEvent[]): FeatureCollection<Point> {
   return {
     type: 'FeatureCollection',
     features: events
-      .filter(e => typeof e.lat === 'number' && typeof e.lng === 'number')
-      .map(e => ({
+      .filter((e) => typeof e.lat === 'number' && typeof e.lng === 'number')
+      .map((e) => ({
         type: 'Feature' as const,
         geometry: { type: 'Point' as const, coordinates: [e.lng as number, e.lat as number] },
         properties: {
-          id: e.id,                          // ✅ use id for precise lookup
+          id: e.id,
           title: e.title || '',
           venue: e.venue || '',
           startsAt: e.startsAt || '',
           url: e.url || '',
-          source: e.source || ''
-        }
-      }))
+          source: e.source || '',
+        },
+      })),
   };
 }
 
@@ -63,7 +63,7 @@ export default function Map({ className = '' }: MapProps) {
   const [city, setCity] = useState<string | undefined>(undefined);
   const [country, setCountry] = useState<string | undefined>(undefined);
 
-  // Panel state
+  // side panel
   const [selectedEvent, setSelectedEvent] = useState<NormalizedEvent | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
@@ -77,8 +77,12 @@ export default function Map({ className = '' }: MapProps) {
         (position) => {
           const { latitude, longitude } = position.coords;
           if (
-            typeof latitude === 'number' && typeof longitude === 'number' &&
-            latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180
+            typeof latitude === 'number' &&
+            typeof longitude === 'number' &&
+            latitude >= -90 &&
+            latitude <= 90 &&
+            longitude >= -180 &&
+            longitude <= 180
           ) {
             setLocation({ lat: latitude, lng: longitude });
             setLoading(false);
@@ -99,65 +103,53 @@ export default function Map({ className = '' }: MapProps) {
         (err) => {
           setError(`Location error: ${err.message}. Using default location.`);
           setLoading(false);
-          setLocation({ lat: 40.7128, lng: -74.0060 }); // NYC fallback
+          setLocation({ lat: 40.7128, lng: -74.006 }); // NYC fallback
         },
         options
       );
     } else {
       setError('Geolocation is not supported by this browser.');
       setLoading(false);
-      setLocation({ lat: 40.7128, lng: -74.0060 }); // NYC fallback
+      setLocation({ lat: 40.7128, lng: -74.006 }); // NYC fallback
     }
   };
 
-  useEffect(() => { getUserLocation(); }, []);
+  useEffect(() => {
+    getUserLocation();
+  }, []);
 
-  // Update GeoJSON source + fit bounds
-  const updateEventLayer = useCallback((evs: NormalizedEvent[]) => {
-    if (!map.current) return;
+  const updateEventLayer = useCallback(
+    (evs: NormalizedEvent[]) => {
+      if (!map.current) return;
+      const src = map.current.getSource(EVENTS_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
+      if (!src) return;
 
-    const src = map.current.getSource(EVENTS_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
-    if (!src) {
-      console.warn('Events source not ready yet');
-      return;
-    }
+      const fc = eventsToGeoJSON(evs);
+      src.setData(fc);
 
-    const fc = eventsToGeoJSON(evs);
-    src.setData(fc);
-    console.log('GeoJSON feature count:', fc.features.length);
-
-    // quick visibility/debug by source
-    const serpCount = evs.filter(e => e.source === 'serpapi' && typeof e.lat === 'number' && typeof e.lng === 'number').length;
-    const tmCount = evs.filter(e => e.source === 'ticketmaster' && typeof e.lat === 'number' && typeof e.lng === 'number').length;
-    console.log(`By source → Serp API: ${serpCount}, Ticketmaster: ${tmCount}`);
-
-    const coords = fc.features.map(f => f.geometry.coordinates as [number, number]);
-
-    if (coords.length === 0) {
-      if (location) {
-        map.current.easeTo({ center: [location.lng, location.lat], zoom: 13, duration: 600 });
+      const coords = fc.features.map((f) => f.geometry.coordinates as [number, number]);
+      if (coords.length === 0) {
+        if (location) {
+          map.current.easeTo({ center: [location.lng, location.lat], zoom: 13, duration: 600 });
+        }
+        return;
       }
-      return;
-    }
 
-    // Build bounds for all points (+ user)
-    const b = new mapboxgl.LngLatBounds(coords[0], coords[0]);
-    for (let i = 1; i < coords.length; i++) b.extend(coords[i]);
-    if (location) b.extend([location.lng, location.lat]);
+      const b = new mapboxgl.LngLatBounds(coords[0], coords[0]);
+      for (let i = 1; i < coords.length; i++) b.extend(coords[i]);
+      if (location) b.extend([location.lng, location.lat]);
 
-    const unique = new Set(coords.map(c => `${c[0].toFixed(5)},${c[1].toFixed(5)}`));
-    if (unique.size === 1) {
-      map.current.easeTo({ center: coords[0], zoom: 15, duration: 700 });
-    } else {
-      map.current.fitBounds(b, { padding: 80, duration: 800 });
-    }
+      const unique = new Set(coords.map((c) => `${c[0].toFixed(5)},${c[1].toFixed(5)}`));
+      if (unique.size === 1) {
+        map.current.easeTo({ center: coords[0], zoom: 15, duration: 700 });
+      } else {
+        map.current.fitBounds(b, { padding: 80, duration: 800 });
+      }
+    },
+    [location]
+  );
 
-    console.log(`🟠 Plotted ${coords.length} points; ${unique.size} unique locations`);
-  }, [location]);
-
-
-
-  // Create the map once we have a location
+  // init map
   useEffect(() => {
     if (!location || !mapContainer.current || map.current) return;
 
@@ -172,17 +164,16 @@ export default function Map({ className = '' }: MapProps) {
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [location.lng, location.lat],
-      zoom: 12
+      zoom: 12,
     });
 
-    // Optional: avoid accidental extreme zooms on double click
     map.current.doubleClickZoom.disable();
 
     map.current.on('load', () => {
       setMapLoaded(true);
       map.current!.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-      // user location marker
+      // user marker
       const dot = document.createElement('div');
       dot.style.width = '20px';
       dot.style.height = '20px';
@@ -192,55 +183,39 @@ export default function Map({ className = '' }: MapProps) {
       dot.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
       new mapboxgl.Marker(dot).setLngLat([location.lng, location.lat]).addTo(map.current!);
 
-      // ---- EVENTS SOURCE + LAYERS (CLUSTERED) ----
+      // source
       map.current!.addSource(EVENTS_SOURCE_ID, {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
         cluster: true,
         clusterRadius: 55,
-        clusterMaxZoom: 14 // keep clustering sane; prevents 22x “zoom to atom”
+        clusterMaxZoom: 14,
       });
 
+      // clusters
       map.current!.addLayer({
         id: `${EVENTS_LAYER_ID}-cluster`,
         type: 'circle',
         source: EVENTS_SOURCE_ID,
         filter: ['has', 'point_count'],
         paint: {
-          'circle-radius': [
-            'step',
-            ['get', 'point_count'],
-            16, 10, 20,
-            25, 24,
-            50, 30
-          ],
-          'circle-color': [
-            'step',
-            ['get', 'point_count'],
-            '#FED7AA',     // <10
-            10, '#FDBA74', // 10–24
-            25, '#FB923C', // 25–49
-            50, '#F97316'  // 50+
-          ],
+          'circle-radius': ['step', ['get', 'point_count'], 16, 10, 20, 25, 24, 50, 30],
+          'circle-color': ['step', ['get', 'point_count'], '#FED7AA', 10, '#FDBA74', 25, '#FB923C', 50, '#F97316'],
           'circle-stroke-color': '#FFFFFF',
-          'circle-stroke-width': 2
-        }
+          'circle-stroke-width': 2,
+        },
       });
 
-      // cluster count labels
       map.current!.addLayer({
         id: `${EVENTS_LAYER_ID}-cluster-count`,
         type: 'symbol',
         source: EVENTS_SOURCE_ID,
         filter: ['has', 'point_count'],
-        layout: {
-          'text-field': ['get', 'point_count_abbreviated'],
-          'text-size': 12
-        },
-        paint: { 'text-color': '#1F2937' }
+        layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-size': 12 },
+        paint: { 'text-color': '#1F2937' },
       });
 
-      // single (unclustered) events — color by source
+      // single points
       map.current!.addLayer({
         id: EVENTS_LAYER_ID,
         type: 'circle',
@@ -251,34 +226,35 @@ export default function Map({ className = '' }: MapProps) {
           'circle-color': [
             'match',
             ['get', 'source'],
-            'ticketmaster', '#F59E0B',   // amber
-            'serpapi',      '#10B981',   // emerald
-            /* default */   '#3B82F6'    // blue
+            'ticketmaster',
+            '#F59E0B',
+            'serpapi',
+            '#10B981',
+            /* default */ '#3B82F6',
           ],
           'circle-stroke-color': '#FFFFFF',
-          'circle-stroke-width': 3
-        }
+          'circle-stroke-width': 3,
+        },
       });
 
-      // click a cluster → zoom into it (but clamp the zoom)
-      const onClusterClick = (e: mapboxgl.MapMouseEvent) => {
+      // cluster click (clamped zoom)
+      map.current!.on('click', `${EVENTS_LAYER_ID}-cluster`, (e: mapboxgl.MapMouseEvent) => {
         const features = map.current!.queryRenderedFeatures(e.point, { layers: [`${EVENTS_LAYER_ID}-cluster`] });
         if (!features.length) return;
-
         const clusterId = features[0].properties?.cluster_id;
         if (clusterId === null || clusterId === undefined) return;
 
         const src = map.current!.getSource(EVENTS_SOURCE_ID) as mapboxgl.GeoJSONSource & {
-          getClusterExpansionZoom: (id: number, cb: (err: Error | null, zoom: number) => void) => void
+          getClusterExpansionZoom: (id: number, cb: (err: Error | null, zoom: number) => void) => void;
         };
         src.getClusterExpansionZoom(clusterId, (err, targetZoom) => {
           if (err || targetZoom === null || targetZoom === undefined) return;
-          const clamped = Math.min(targetZoom, 15); // ✅ prevent “zoom to oblivion”
+          const clamped = Math.min(targetZoom, 15);
           const center = (features[0].geometry as unknown as { coordinates: [number, number] }).coordinates;
           map.current!.easeTo({ center, zoom: clamped, duration: 500 });
         });
-      };
-      map.current!.on('click', `${EVENTS_LAYER_ID}-cluster`, onClusterClick);
+      });
+
       map.current!.on('mouseenter', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = 'pointer'));
       map.current!.on('mouseleave', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = ''));
 
@@ -287,46 +263,38 @@ export default function Map({ className = '' }: MapProps) {
     });
 
     return () => {
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
-      }
+      map.current?.remove();
+      map.current = null;
     };
   }, [location]);
 
-  // Update the layer when events arrive
+  // update data when events change
   useEffect(() => {
     if (mapLoaded && map.current) {
       updateEventLayer(events);
     }
   }, [mapLoaded, events, updateEventLayer]);
 
-  // Click unclustered event → open details panel (no zoom change)
+  // click unclustered → open details panel (no zoom change)
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
 
     const clickHandler = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
       e.preventDefault();
-      // extra safety to stop any bubbling weirdness
       const originalEvent = (e as mapboxgl.MapMouseEvent & { originalEvent?: { stopPropagation?: () => void } }).originalEvent;
-      if (originalEvent?.stopPropagation) originalEvent.stopPropagation();
+      originalEvent?.stopPropagation?.();
 
       const f = e.features?.[0];
       if (!f) return;
       const p = (f.properties || {}) as { id?: string; title?: string; venue?: string; startsAt?: string };
       const id = typeof p.id === 'string' ? p.id : undefined;
 
-      // re-center slightly so the panel doesn’t cover the point
       const coords = (f.geometry as unknown as { coordinates: [number, number] }).coordinates;
       map.current!.easeTo({ center: coords, duration: 350 }); // keep current zoom
 
-      let ev: NormalizedEvent | undefined;
-      if (id) {
-        ev = events.find(e => e.id === id);
-      }
-      if (!ev) {
-        ev = events.find(e => e.title === p.title && e.venue === p.venue && e.startsAt === p.startsAt);
-      }
+             const ev: NormalizedEvent | undefined = id
+         ? events.find((item) => item.id === id)
+         : events.find((item) => item.title === p.title && item.venue === p.venue && item.startsAt === p.startsAt);
 
       if (ev) {
         setSelectedEvent(ev);
@@ -344,7 +312,7 @@ export default function Map({ className = '' }: MapProps) {
     return (
       <div className={`flex items-center justify-center ${className}`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2" />
           <p className="text-gray-600">Getting your location...</p>
           <p className="text-sm text-gray-500 mt-1">Please allow location access when prompted</p>
         </div>
@@ -375,19 +343,14 @@ export default function Map({ className = '' }: MapProps) {
         {/* Map */}
         <div ref={mapContainer} className="w-full h-full" />
 
-        {/* Search card (solid, pretty) */}
-        <div className="absolute top-4 left-4 right-4 md:right-auto md:w-[520px] z-20">
-          <div className="rounded-2xl border border-gray-200 bg-white shadow-xl p-3">
-            <EventSearch
-              onEventsFound={setEvents}
-              userCity={city}
-              userCountry={country}
-            />
+        {/* Overlay wrapper – doesn’t block map outside the card */}
+        <div className="pointer-events-none absolute top-4 left-4 right-4 md:right-auto md:w-[520px] z-30">
+          <div className="pointer-events-auto">
+            <EventSearch onEventsFound={setEvents} userCity={city} userCountry={country} />
           </div>
         </div>
       </div>
 
-      {/* Details side panel */}
       <EventDetailsPanel
         event={selectedEvent}
         isOpen={isPanelOpen}
