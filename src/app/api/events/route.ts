@@ -52,6 +52,8 @@ export async function POST(req: Request) {
       keyword,
       city: finalCity,
       countryCode: finalCountry,
+      size: 150,
+      maxPages: 3,
     });
 
     const serpP = fetchSerpEvents({
@@ -59,7 +61,7 @@ export async function POST(req: Request) {
       city: finalCity,
       country: finalCountry,
       when: serpWhen,
-      limit: 100,  // Increased from 80 to get more events
+      limit: 100,
       mapboxToken: MAPBOX_TOKEN,
     });
 

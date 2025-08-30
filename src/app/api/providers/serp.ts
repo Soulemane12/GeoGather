@@ -86,7 +86,7 @@ export async function fetchSerpEvents(opts: {
   const key = process.env.SERPAPI_API_KEY!;
   if (!key) return [];
 
-  const limit = Math.max(1, Math.min(opts.limit ?? 80, 120));
+  const limit = Math.max(1, Math.min(opts.limit ?? 100, 150));
   const location = opts.city || opts.country || undefined;
 
   // Build a search query for Google Events
