@@ -1,12 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import type { NormalizedEvent } from '@/lib/types';
 
 export default function HomePage() {
-  const [selectedEvent, setSelectedEvent] = useState<NormalizedEvent | null>(null);
-  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
@@ -310,73 +306,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Side Panel */}
-      {isSidePanelOpen && selectedEvent && (
-        <div className="fixed top-0 right-0 w-1/3 h-full bg-white shadow-2xl z-50 p-6 overflow-y-auto">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Event Details</h3>
-            <button
-              onClick={() => {
-                setIsSidePanelOpen(false);
-                setSelectedEvent(null);
-              }}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              ✕
-            </button>
-          </div>
 
-          <div className="space-y-4">
-            <div>
-              <h4 className="text-xl font-bold text-gray-900 mb-2">
-                {selectedEvent.title}
-              </h4>
-              {selectedEvent.venue && (
-                <p className="text-gray-600 flex items-center">
-                  <span className="mr-2">📍</span>
-                  {selectedEvent.venue}
-                </p>
-              )}
-            </div>
-
-            {selectedEvent.startsAt && (
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Date & Time</p>
-                <p className="text-gray-900">
-                  {new Date(selectedEvent.startsAt).toLocaleString(undefined, {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit'
-                  })}
-                </p>
-              </div>
-            )}
-
-            {selectedEvent.description && (
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Description</p>
-                <p className="text-gray-700">{selectedEvent.description}</p>
-              </div>
-            )}
-
-            {selectedEvent.url && (
-              <div className="pt-4">
-                <a
-                  href={selectedEvent.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors text-center block"
-                >
-                  View Event Details →
-                </a>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Footer */}
       <footer className="bg-black text-white py-12 px-4 sm:px-6 lg:px-8">

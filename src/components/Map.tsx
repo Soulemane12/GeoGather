@@ -30,7 +30,6 @@ interface MapProps {
   className?: string;
   events?: NormalizedEvent[];
   onLocationUpdate?: (location: { city?: string; country?: string }) => void;
-  onEventSelect?: (event: NormalizedEvent) => void;
 }
 
 function eventsToGeoJSON(events: NormalizedEvent[]): FeatureCollection<Point> {
@@ -53,7 +52,7 @@ function eventsToGeoJSON(events: NormalizedEvent[]): FeatureCollection<Point> {
   };
 }
 
-export default function Map({ className = '', events = [], onLocationUpdate, onEventSelect }: MapProps) {
+export default function Map({ className = '', events = [], onLocationUpdate }: MapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
 
@@ -283,18 +282,33 @@ export default function Map({ className = '', events = [], onLocationUpdate, onE
       map.current!.on('mouseenter', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = 'pointer'));
       map.current!.on('mouseleave', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = ''));
 
-      // click an unclustered event → side panel
+      // click an unclustered event → popup
       map.current!.on('click', EVENTS_LAYER_ID, (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
         const f = e.features?.[0];
-        if (!f || !onEventSelect) return;
+        if (!f) return;
 
         const p = f.properties || {};
 
         // Find the full event object from the events array
         const event = events.find(ev => ev.id === p.id);
-        if (event) {
-          onEventSelect(event);
-        }
+        if (!event) return;
+
+        // Create popup HTML
+        const popupHtml = `
+          <div class="max-w-sm">
+            <h3 class="font-bold text-lg text-gray-900 mb-2">${event.title}</h3>
+            ${event.venue ? `<p class="text-gray-600 mb-2">📍 ${event.venue}</p>` : ''}
+            ${event.startsAt ? `<p class="text-sm text-gray-500 mb-2">${new Date(event.startsAt).toLocaleString()}</p>` : ''}
+            ${event.description ? `<p class="text-gray-700 mb-3">${event.description.substring(0, 150)}${event.description.length > 150 ? '...' : ''}</p>` : ''}
+            ${event.url ? `<a href="${event.url}" target="_blank" class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">View Event</a>` : ''}
+          </div>
+        `;
+
+        // Create and show popup
+        new mapboxgl.Popup({ closeButton: true, closeOnClick: true })
+          .setLngLat([e.lngLat.lng, e.lngLat.lat])
+          .setHTML(popupHtml)
+          .addTo(map.current!);
       });
 
       map.current!.on('mouseenter', EVENTS_LAYER_ID, () => (map.current!.getCanvas().style.cursor = 'pointer'));
