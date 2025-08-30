@@ -2,15 +2,60 @@ import { NextResponse } from "next/server";
 import type { NormalizedEvent } from "@/lib/types";
 import { extractIntent } from "../providers/groq-intent";
 import { fetchTicketmaster } from "../providers/ticketmaster";
-import { fetchEventbriteOrgEvents } from "../providers/eventbrite";
+import { fetchEventbriteSearch, fetchEventbriteOrgEvents } from "../providers/eventbrite";
 
 function dedupe(events: NormalizedEvent[]) {
   const seen = new Map<string, NormalizedEvent>();
   for (const e of events) {
-    const key = `${(e.title || "").toLowerCase()}|${e.startsAt || ""}|${e.venue || ""}`;
+    const key = `${(e.title || "").toLowerCase()}|${e.startsAt || ""}|${(e.venue || "").toLowerCase()}`;
     if (!seen.has(key)) seen.set(key, e);
   }
   return [...seen.values()];
+}
+
+// optional: simple time window → range start/end
+function timeRangeFromWindow(tw: string | undefined) {
+  const now = new Date();
+  const start = new Date(now);
+  const end = new Date(now);
+
+  switch (tw) {
+    case "today":
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      break;
+    case "tonight":
+      start.setHours(17, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      break;
+    case "tomorrow":
+      start.setDate(start.getDate() + 1);
+      start.setHours(0, 0, 0, 0);
+      end.setDate(end.getDate() + 1);
+      end.setHours(23, 59, 59, 999);
+      break;
+    case "weekend": {
+      const day = now.getDay(); // 0 Sun ... 6 Sat
+      const daysUntilSat = (6 - day + 7) % 7;
+      const saturday = new Date(now);
+      saturday.setDate(now.getDate() + daysUntilSat);
+      saturday.setHours(0, 0, 0, 0);
+      const sunday = new Date(saturday);
+      sunday.setDate(saturday.getDate() + 1);
+      sunday.setHours(23, 59, 59, 999);
+      return {
+        rangeStartISO: saturday.toISOString(),
+        rangeEndISO: sunday.toISOString(),
+      };
+    }
+    default:
+      return {};
+  }
+
+  return {
+    rangeStartISO: start.toISOString(),
+    rangeEndISO: end.toISOString(),
+  };
 }
 
 export async function POST(req: Request) {
@@ -41,30 +86,49 @@ export async function POST(req: Request) {
     const intent = await extractIntent(prompt ?? "", city, country);
     console.log('Groq intent result:', intent);
 
-    // Build a Ticketmaster keyword (join keywords with spaces)
-    const topicKeywords = Array.isArray(intent.topic_keywords) ? intent.topic_keywords : [];
-    const keyword = topicKeywords.join(" ").trim() || (prompt ?? "");
-    console.log('Searching with keyword:', keyword);
+               const keywords = Array.isArray(intent.topic_keywords) ? intent.topic_keywords : [];
+           const keyword = (keywords.join(" ").trim() || prompt || "").slice(0, 100); // keep it tidy
+           console.log('Searching with keyword:', keyword);
 
-    // 2) Fan out to providers
-    console.log('Fetching from Ticketmaster...');
-    const tmP = fetchTicketmaster({
-      keyword,
-      city: typeof intent.city === 'string' ? intent.city : undefined,
-      countryCode: typeof intent.country === 'string' ? intent.country : undefined,
-    });
+           const timeRange = timeRangeFromWindow(String(intent.time_window));
 
-    const ebP = process.env.EVENTBRITE_ORG_ID
-      ? fetchEventbriteOrgEvents({ orgId: process.env.EVENTBRITE_ORG_ID })
-      : Promise.resolve<NormalizedEvent[]>([]);
+           // Fire all providers
+           console.log('Fetching from Ticketmaster...');
+           const tmP = fetchTicketmaster({
+             keyword,
+             city: typeof intent.city === "string" ? intent.city : undefined,
+             countryCode: typeof intent.country === "string" ? intent.country : undefined,
+           });
 
-    const [tm, eb] = await Promise.all([tmP, ebP]);
-    console.log('Results:', { ticketmaster: tm.length, eventbrite: eb.length });
+           console.log('Fetching from Eventbrite search...');
+           const ebSearchP = process.env.EVENTBRITE_TOKEN
+             ? fetchEventbriteSearch({
+                 q: keyword,
+                 city: typeof intent.city === "string" ? intent.city : undefined,
+                 country: typeof intent.country === "string" ? intent.country : undefined,
+                 within: "30mi",
+                 rangeStartISO: timeRange.rangeStartISO,
+                 rangeEndISO: timeRange.rangeEndISO,
+                 maxPages: 2,
+               })
+             : Promise.resolve<NormalizedEvent[]>([]);
 
-    // 3) Merge, dedupe, sort by date, and limit to 50 events
-    const merged = dedupe([...tm, ...eb])
-      .sort((a, b) => (a.startsAt || "").localeCompare(b.startsAt || ""))
-      .slice(0, 50); // Limit to 50 events for performance
+           console.log('Fetching from Eventbrite org...');
+           const ebOrgP = process.env.EVENTBRITE_ORG_ID && process.env.EVENTBRITE_TOKEN
+             ? fetchEventbriteOrgEvents({ orgId: process.env.EVENTBRITE_ORG_ID })
+             : Promise.resolve<NormalizedEvent[]>([]);
+
+           const [tm, ebSearch, ebOrg] = await Promise.all([tmP, ebSearchP, ebOrgP]);
+           console.log('Results:', { 
+             ticketmaster: tm.length, 
+             eventbriteSearch: ebSearch.length, 
+             eventbriteOrg: ebOrg.length 
+           });
+
+           // 3) Merge, dedupe, sort by date, and limit to 100 events
+           const merged = dedupe([...tm, ...ebSearch, ...ebOrg])
+             .sort((a, b) => (a.startsAt || "").localeCompare(b.startsAt || ""))
+             .slice(0, 100); // Increased limit since we have more sources
 
     console.log('Final merged results:', merged.length);
     return NextResponse.json({

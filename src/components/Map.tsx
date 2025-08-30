@@ -35,17 +35,17 @@ function eventsToGeoJSON(events: NormalizedEvent[]): FeatureCollection<Point> {
     type: 'FeatureCollection',
     features: events
       .filter(e => typeof e.lat === 'number' && typeof e.lng === 'number')
-             .map(e => ({
-         type: 'Feature' as const,
-         geometry: { type: 'Point' as const, coordinates: [e.lng as number, e.lat as number] },
-         properties: {
-           title: e.title || '',
-           venue: e.venue || '',
-           startsAt: e.startsAt || '',
-           url: e.url || '',
-           source: e.source || ''
-         }
-       }))
+      .map(e => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [e.lng as number, e.lat as number] },
+        properties: {
+          title: e.title || '',
+          venue: e.venue || '',
+          startsAt: e.startsAt || '',
+          url: e.url || '',
+          source: e.source || ''
+        }
+      }))
   };
 }
 
@@ -110,10 +110,7 @@ export default function Map({ className = '' }: MapProps) {
 
   useEffect(() => { getUserLocation(); }, []);
 
-  const handleEventsFound = (newEvents: NormalizedEvent[]) => {
-    setEvents(newEvents);
-    console.log(`Found ${newEvents.length} events`);
-  };
+  // Removed handleEventsFound since we're using setEvents directly
 
   // Update GeoJSON source + fit bounds
   const updateEventLayer = useCallback((evs: NormalizedEvent[]) => {
@@ -132,7 +129,6 @@ export default function Map({ className = '' }: MapProps) {
     const coords = fc.features.map(f => f.geometry.coordinates as [number, number]);
 
     if (coords.length === 0) {
-      // No events — optionally fly back to user location
       if (location) {
         map.current.easeTo({ center: [location.lng, location.lat], zoom: 13, duration: 600 });
       }
@@ -176,7 +172,7 @@ export default function Map({ className = '' }: MapProps) {
       setMapLoaded(true);
       map.current!.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-      // user location marker (DOM is fine just for this one)
+      // user location marker
       const dot = document.createElement('div');
       dot.style.width = '20px';
       dot.style.height = '20px';
@@ -186,47 +182,128 @@ export default function Map({ className = '' }: MapProps) {
       dot.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
       new mapboxgl.Marker(dot).setLngLat([location.lng, location.lat]).addTo(map.current!);
 
-      // ---- EVENTS SOURCE + LAYER ----
+      // ---- EVENTS SOURCE + LAYERS (CLUSTERED) ----
       map.current!.addSource(EVENTS_SOURCE_ID, {
         type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] }
-        // To enable clustering later:
-        // cluster: true, clusterRadius: 50
+        data: { type: 'FeatureCollection', features: [] },
+        cluster: true,
+        clusterRadius: 55,
+        clusterMaxZoom: 14
              });
 
+      // cluster bubbles
       map.current!.addLayer({
-        id: EVENTS_LAYER_ID,
+        id: `${EVENTS_LAYER_ID}-cluster`,
         type: 'circle',
         source: EVENTS_SOURCE_ID,
+        filter: ['has', 'point_count'],
         paint: {
-          'circle-radius': 7,
-          'circle-color': '#F59E0B',
+          'circle-radius': [
+            'step',
+            ['get', 'point_count'],
+            16,   10, 20,
+            25,   50, 28
+          ],
+          'circle-color': [
+            'step',
+            ['get', 'point_count'],
+            '#FED7AA', // 1-9
+            10, '#FDBA74', // 10-49
+            50, '#FB923C'  // 50+
+          ],
           'circle-stroke-color': '#FFFFFF',
           'circle-stroke-width': 2
         }
       });
 
-             // click → popup
-       map.current!.on('click', EVENTS_LAYER_ID, (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
-         const f = e.features?.[0];
-         if (!f) return;
-         const c = (f.geometry as unknown as { coordinates: [number, number] }).coordinates;
-         const p = f.properties || {};
+      // cluster count labels
+      map.current!.addLayer({
+        id: `${EVENTS_LAYER_ID}-cluster-count`,
+        type: 'symbol',
+        source: EVENTS_SOURCE_ID,
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': ['get', 'point_count_abbreviated'],
+          'text-size': 12
+        },
+        paint: { 'text-color': '#1F2937' }
+      });
+
+      // single (unclustered) events — color by source
+      map.current!.addLayer({
+        id: EVENTS_LAYER_ID,
+        type: 'circle',
+        source: EVENTS_SOURCE_ID,
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-radius': 7,
+          'circle-color': [
+            'match',
+            ['get', 'source'],
+            'ticketmaster', '#F59E0B',   // amber
+            'eventbrite',   '#10B981',   // emerald
+            /* default */   '#3B82F6'    // blue
+          ],
+          'circle-stroke-color': '#FFFFFF',
+          'circle-stroke-width': 2
+        }
+      });
+
+             // click a cluster → zoom into it
+       map.current!.on('click', `${EVENTS_LAYER_ID}-cluster`, (e: mapboxgl.MapMouseEvent) => {
+         const features = map.current!.queryRenderedFeatures(e.point, { layers: [`${EVENTS_LAYER_ID}-cluster`] });
+         if (features.length === 0) return;
+         
+         const clusterId = features[0].properties?.cluster_id;
+         if (clusterId === null || clusterId === undefined) return;
+         
+         const src = map.current!.getSource(EVENTS_SOURCE_ID) as mapboxgl.GeoJSONSource & {
+           getClusterExpansionZoom: (id: number, cb: (err: Error | null, zoom: number) => void) => void
+         };
+         src.getClusterExpansionZoom(clusterId, (err, zoom) => {
+           if (err || zoom === null || zoom === undefined) return;
+           map.current!.easeTo({ center: (features[0].geometry as unknown as { coordinates: [number, number] }).coordinates, zoom, duration: 500 });
+         });
+       });
+
+      map.current!.on('mouseenter', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = 'pointer'));
+      map.current!.on('mouseleave', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = ''));
+
+      // click an unclustered event → popup
+      map.current!.on('click', EVENTS_LAYER_ID, (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
+        const f = e.features?.[0];
+        if (!f) return;
+        const c = (f.geometry as unknown as { coordinates: [number, number] }).coordinates;
+        const p = f.properties || {};
+
+        const dateHtml = p.startsAt
+          ? `<p class="text-xs text-gray-600 mb-1">📅 ${
+              new Date(String(p.startsAt)).toLocaleString(undefined, {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+              })
+            }</p>`
+          : '';
+
         const html = `
           <div class="p-2 max-w-xs">
             <h3 class="font-bold text-sm mb-1">${p.title || ''}</h3>
             ${p.venue ? `<p class="text-xs text-gray-600 mb-1">📍 ${p.venue}</p>` : ''}
-            ${p.startsAt ? `<p class="text-xs text-gray-600 mb-1">📅 ${new Date(p.startsAt).toLocaleString()}</p>` : ''}
+            ${dateHtml}
             ${p.url ? `<a href="${p.url}" target="_blank" class="text-blue-600 text-xs hover:underline">View Details →</a>` : ''}
           </div>
         `;
+
         new mapboxgl.Popup({ offset: 12 }).setLngLat(c).setHTML(html).addTo(map.current!);
       });
 
       map.current!.on('mouseenter', EVENTS_LAYER_ID, () => (map.current!.getCanvas().style.cursor = 'pointer'));
       map.current!.on('mouseleave', EVENTS_LAYER_ID, () => (map.current!.getCanvas().style.cursor = ''));
 
-      console.log('✅ Map loaded, events layer added, user marker added');
+      console.log('✅ Map loaded, events layer (clustered) added, user marker added');
     });
 
     return () => {
@@ -276,7 +353,7 @@ export default function Map({ className = '' }: MapProps) {
   return (
     <>
       <EventSearch
-        onEventsFound={handleEventsFound}
+        onEventsFound={setEvents}
         userCity={city}
         userCountry={country}
       />
