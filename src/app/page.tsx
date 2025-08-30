@@ -1,15 +1,6 @@
-'use client';
-
-import { useState } from 'react';
 import Link from 'next/link';
-import Map from '../components/Map';
-import EventSearch from '../components/EventSearch';
-import type { NormalizedEvent } from '@/lib/types';
 
 export default function Home() {
-  const [events, setEvents] = useState<NormalizedEvent[]>([]);
-  const [userLocation, setUserLocation] = useState<{ city?: string; country?: string }>({});
-  const [selectedPlan, setSelectedPlan] = useState<'free' | 'pro' | 'premium'>('free');
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Navigation */}
@@ -24,9 +15,6 @@ export default function Home() {
             <div className="flex items-center space-x-4">
               <Link href="/map" className="text-gray-600 hover:text-blue-600 transition-colors">
                 Map
-              </Link>
-              <Link href="/home" className="text-gray-600 hover:text-blue-600 transition-colors">
-                Home
               </Link>
             </div>
           </div>
@@ -53,99 +41,11 @@ export default function Home() {
             >
               🗺️ Start Exploring
             </Link>
-
-            {/* Plan Selector */}
-            <div className="mt-8">
-              <p className="text-sm text-gray-500 mb-3">Choose your plan to get started:</p>
-              <div className="flex space-x-2">
-                {[
-                  { value: 'free' as const, label: 'Free (5mi)', color: 'bg-gray-100 text-gray-700' },
-                  { value: 'pro' as const, label: 'Pro (25mi)', color: 'bg-blue-100 text-blue-700' },
-                  { value: 'premium' as const, label: 'Premium (∞)', color: 'bg-purple-100 text-purple-700' }
-                ].map((planOption) => (
-                  <button
-                    key={planOption.value}
-                    onClick={() => setSelectedPlan(planOption.value)}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-                      selectedPlan === planOption.value
-                        ? `${planOption.color} ring-2 ring-offset-2 ring-blue-500`
-                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    {planOption.label}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* Interactive Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Try It Now
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Experience the power of AI-powered event discovery. Search for events and see them on the map instantly.
-            </p>
-          </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Search Panel */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl p-6 shadow-lg">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900">Search Events</h3>
-                <EventSearch
-                  onEventsFound={setEvents}
-                  userCity={userLocation.city}
-                  userCountry={userLocation.country}
-                  plan={selectedPlan}
-                  embedded={true}
-                />
-              </div>
-            </div>
-
-            {/* Map */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-2xl p-6 shadow-lg">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900">Event Map</h3>
-                <div className="h-96 rounded-xl overflow-hidden">
-                  <Map
-                    className="w-full h-full"
-                    events={events}
-                    onLocationUpdate={setUserLocation}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Results Summary */}
-          {events.length > 0 && (
-            <div className="mt-8 bg-white rounded-2xl p-6 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Found {events.length} events
-                  </h3>
-                  <p className="text-gray-600">
-                    Using {selectedPlan.toUpperCase()} plan • {selectedPlan === 'free' ? '5-mile' : selectedPlan === 'pro' ? '25-mile' : 'Unlimited'} radius
-                  </p>
-                </div>
-                <Link
-                  href="/map"
-                  className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-                >
-                  View Full Map →
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
 
       {/* Features Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
@@ -223,16 +123,12 @@ export default function Home() {
                   <span className="text-gray-600">Up to 50 events per search</span>
                 </li>
               </ul>
-              <button
-                onClick={() => setSelectedPlan('free')}
-                className={`w-full block text-center py-3 px-6 rounded-xl transition-colors ${
-                  selectedPlan === 'free'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+              <Link
+                href="/map"
+                className="w-full block text-center py-3 px-6 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
               >
                 Get Started Free
-              </button>
+              </Link>
             </div>
 
             {/* Pro Plan */}
@@ -272,16 +168,12 @@ export default function Home() {
                   <span className="text-gray-600">Event recommendations</span>
                 </li>
               </ul>
-              <button
-                onClick={() => setSelectedPlan('pro')}
-                className={`w-full block text-center py-3 px-6 rounded-xl transition-all duration-200 ${
-                  selectedPlan === 'pro'
-                    ? 'bg-gradient-to-r from-blue-700 to-purple-700 text-white'
-                    : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
-                }`}
+              <Link
+                href="/map"
+                className="w-full block text-center py-3 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
               >
                 Start Pro Trial
-              </button>
+              </Link>
             </div>
 
             {/* Premium Plan */}
@@ -316,16 +208,12 @@ export default function Home() {
                   <span className="text-gray-600">Priority support</span>
                 </li>
               </ul>
-              <button
-                onClick={() => setSelectedPlan('premium')}
-                className={`w-full block text-center py-3 px-6 rounded-xl transition-colors ${
-                  selectedPlan === 'premium'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+              <Link
+                href="/map"
+                className="w-full block text-center py-3 px-6 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
               >
                 Contact Sales
-              </button>
+              </Link>
             </div>
           </div>
         </div>
