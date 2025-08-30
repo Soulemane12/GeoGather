@@ -21,12 +21,18 @@ export default function Home() {
                 VibeMap
               </h1>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
+              <Link href="/home" className="text-gray-600 hover:text-blue-600 transition-colors">
+                Home
+              </Link>
               <Link href="/map" className="text-gray-600 hover:text-blue-600 transition-colors">
                 Map
               </Link>
-              <Link href="/home" className="text-gray-600 hover:text-blue-600 transition-colors">
-                Home
+              <Link href="/pricing" className="text-gray-600 hover:text-blue-600 transition-colors">
+                Pricing
+              </Link>
+              <Link href="/billing" className="text-gray-600 hover:text-blue-600 transition-colors">
+                Billing
               </Link>
             </div>
           </div>

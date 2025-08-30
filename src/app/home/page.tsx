@@ -15,12 +15,18 @@ export default function HomePage() {
                 VibeMap
               </h1>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
+              <Link href="/" className="text-gray-300 hover:text-orange-500 transition-colors">
+                Home
+              </Link>
               <Link href="/map" className="text-gray-300 hover:text-orange-500 transition-colors">
                 Map
               </Link>
-              <Link href="/" className="text-gray-300 hover:text-orange-500 transition-colors">
-                Home
+              <Link href="/pricing" className="text-gray-300 hover:text-orange-500 transition-colors">
+                Pricing
+              </Link>
+              <Link href="/billing" className="text-gray-300 hover:text-orange-500 transition-colors">
+                Billing
               </Link>
             </div>
           </div>
@@ -46,6 +52,12 @@ export default function HomePage() {
               className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-orange-500 to-gray-800 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-black transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               🗺️ Start Exploring
+            </Link>
+            <Link
+              href="/pricing"
+              className="inline-flex items-center px-6 py-3 text-orange-600 font-semibold rounded-lg hover:bg-orange-50 transition-all duration-200"
+            >
+              View Pricing Plans →
             </Link>
           </div>
         </div>
@@ -103,140 +115,13 @@ export default function HomePage() {
               Select the perfect plan for your event discovery needs. Start free and upgrade anytime.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Free Plan */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-200 transition-all duration-300">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Free</h3>
-                <p className="text-gray-700">Perfect for casual event discovery</p>
-              </div>
-              <div className="mb-8 text-center">
-                <div className="text-5xl font-bold text-gray-900 mb-2">$0</div>
-                <p className="text-gray-600">Forever free</p>
-              </div>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">5-mile search radius</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">AI-powered search</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">Interactive map with clusters</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">Up to 50 events per search</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-gray-400 mr-3 text-lg">✗</span>
-                  <span className="text-gray-500">Advanced filters</span>
-                </li>
-              </ul>
-              <button
-                className="w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 bg-gray-200 text-gray-800 hover:bg-gray-300"
-              >
-                Get Started Free
-              </button>
-            </div>
-
-            {/* Pro Plan */}
-            <div className="bg-white rounded-2xl p-8 shadow-xl border-2 border-orange-500 relative transform transition-all duration-300">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span className="bg-gradient-to-r from-orange-500 to-gray-800 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                  Most Popular
-                </span>
-              </div>
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Pro</h3>
-                <p className="text-gray-700">For serious event enthusiasts</p>
-              </div>
-              <div className="mb-8 text-center">
-                <div className="text-5xl font-bold text-gray-900 mb-2">$9.99</div>
-                <p className="text-gray-600">per month</p>
-              </div>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">25-mile search radius</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">Advanced AI search & filters</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">Real-time event updates</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">Up to 200 events per search</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">Personalized recommendations</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">Priority support</span>
-                </li>
-              </ul>
-              <button
-                className="w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 bg-gradient-to-r from-orange-500 to-gray-800 text-white hover:from-orange-600 hover:to-black"
-              >
-                Start Pro Trial
-              </button>
-            </div>
-
-            {/* Premium Plan */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-200 transition-all duration-300">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Premium</h3>
-                <p className="text-gray-700">For event professionals</p>
-              </div>
-              <div className="mb-8 text-center">
-                <div className="text-5xl font-bold text-gray-900 mb-2">$19.99</div>
-                <p className="text-gray-600">per month</p>
-              </div>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">Unlimited search radius</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">All Pro features</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">Full API access</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">Unlimited events per search</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">White-label solution</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">Dedicated account manager</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="text-orange-500 mr-3 text-lg">✓</span>
-                  <span className="text-gray-800">Custom integrations</span>
-                </li>
-              </ul>
-              <button
-                className="w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 bg-gray-200 text-gray-800 hover:bg-gray-300"
-              >
-                Contact Sales
-              </button>
-            </div>
+          <div className="text-center">
+            <Link
+              href="/pricing"
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-orange-500 to-gray-800 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-black transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              View All Pricing Plans
+            </Link>
           </div>
         </div>
       </section>
