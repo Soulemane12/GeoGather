@@ -112,8 +112,20 @@ export default function Map({ className = '' }: MapProps) {
     // build bounds
     const bounds = new mapboxgl.LngLatBounds();
 
-    eventsToAdd.forEach(event => {
-      if (typeof event.lat === 'number' && typeof event.lng === 'number') {
+    console.log('Processing events:', eventsToAdd.length);
+    let validEvents = 0;
+    
+    eventsToAdd.forEach((event, index) => {
+      console.log(`Event ${index}:`, { title: event.title, lat: event.lat, lng: event.lng });
+      
+      if (typeof event.lat === 'number' && typeof event.lng === 'number' && 
+          !isNaN(event.lat) && !isNaN(event.lng) &&
+          event.lat >= -90 && event.lat <= 90 && 
+          event.lng >= -180 && event.lng <= 180) {
+        
+        validEvents++;
+        console.log(`✅ Valid event ${index}: ${event.title} at [${event.lng}, ${event.lat}]`);
+        
         // marker DOM
         const el = document.createElement('div');
         el.className = 'event-marker';
@@ -146,15 +158,22 @@ export default function Map({ className = '' }: MapProps) {
 
         newMarkers.push(marker);
         bounds.extend([event.lng, event.lat]);
+      } else {
+        console.log(`❌ Invalid event ${index}: ${event.title} - missing or invalid coordinates`);
       }
     });
+    
+    console.log(`Valid events with coordinates: ${validEvents}/${eventsToAdd.length}`);
 
     // also include the user location so it stays in view
     if (location) bounds.extend([location.lng, location.lat]);
 
     // apply bounds if we have anything
     if (!bounds.isEmpty()) {
+      console.log('Fitting bounds:', bounds.toArray());
       map.current.fitBounds(bounds, { padding: 80, duration: 800 });
+    } else {
+      console.log('No valid bounds to fit - no events with coordinates');
     }
 
     setEventMarkers(newMarkers);
