@@ -8,9 +8,10 @@ interface EventSearchProps {
   userCity?: string;
   userCountry?: string;
   plan?: 'free' | 'pro' | 'premium';
+  embedded?: boolean; // For home page layout
 }
 
-export default function EventSearch({ onEventsFound, userCity, userCountry, plan = 'free' }: EventSearchProps) {
+export default function EventSearch({ onEventsFound, userCity, userCountry, plan = 'free', embedded = false }: EventSearchProps) {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +72,10 @@ export default function EventSearch({ onEventsFound, userCity, userCountry, plan
   };
 
     return (
-    <div className="fixed top-24 left-6 z-[9999] bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-200 p-6 max-w-sm">
+    <div className={embedded
+      ? "w-full"
+      : "fixed top-24 left-6 z-[9999] bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-200 p-6 max-w-sm"
+    }>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Plan Selector */}
         <div>
