@@ -98,7 +98,10 @@ export default function Home() {
             <div className="bg-white rounded-2xl p-6 shadow-lg w-1/2">
               <h3 className="text-lg font-semibold mb-4 text-gray-900">Search Events</h3>
               <EventSearch
-                onEventsFound={setEvents}
+                onEventsFound={(events) => {
+                  console.log('Events found:', events.length);
+                  setEvents(events);
+                }}
                 userCity={userLocation.city}
                 userCountry={userLocation.country}
                 plan={selectedPlan}

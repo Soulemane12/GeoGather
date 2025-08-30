@@ -247,7 +247,7 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
             'match',
             ['get', 'source'],
             'ticketmaster', '#F59E0B',   // amber
-            'eventbrite',   '#10B981',   // emerald
+            'serpapi',      '#10B981',   // emerald
             /* default */   '#3B82F6'    // blue
           ],
           'circle-stroke-color': '#FFFFFF',
@@ -324,6 +324,7 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
 
   // Update the layer when events arrive
   useEffect(() => {
+    console.log('Map component received events:', events.length);
     if (mapLoaded && map.current) {
       updateEventLayer(events);
     }
