@@ -163,30 +163,18 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
       return;
     }
 
-    try {
-      mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+    mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
-        center: [location.lng, location.lat],
-        zoom: 12
-      });
-    } catch (error) {
-      console.error('Error creating map:', error);
-      setError('Failed to initialize map. Please check your Mapbox configuration.');
-      return;
-    }
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [location.lng, location.lat],
+      zoom: 12
+    });
 
     map.current.on('load', () => {
-      try {
-        setMapLoaded(true);
-        map.current!.addControl(new mapboxgl.NavigationControl(), 'top-right');
-      } catch (error) {
-        console.error('Error in map load event:', error);
-        setError('Failed to load map controls. Please refresh the page.');
-        return;
-      }
+      setMapLoaded(true);
+      map.current!.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
       // user location marker
       const dot = document.createElement('div');
@@ -199,19 +187,13 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
       new mapboxgl.Marker(dot).setLngLat([location.lng, location.lat]).addTo(map.current!);
 
       // ---- EVENTS SOURCE + LAYERS (CLUSTERED) ----
-      try {
-        map.current!.addSource(EVENTS_SOURCE_ID, {
-          type: 'geojson',
-          data: { type: 'FeatureCollection', features: [] },
-          cluster: true,
-          clusterRadius: 55,
-          clusterMaxZoom: 14
-        });
-      } catch (error) {
-        console.error('Error adding events source:', error);
-        setError('Failed to initialize map data source.');
-        return;
-      }
+      map.current!.addSource(EVENTS_SOURCE_ID, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+        cluster: true,
+        clusterRadius: 55,
+        clusterMaxZoom: 14
+      });
 
       // ✅ FIXED: step() must be base, stop1,out1, stop2,out2, ...
       map.current!.addLayer({
@@ -384,20 +366,13 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
       <div className={`flex items-center justify-center ${className}`}>
         <div className="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-600 mb-2">⚠️ {error}</p>
-          <p className="text-sm text-gray-600 mb-3">
-            {error.includes('Mapbox access token') 
-              ? 'Mapbox access token is required. Please add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to your .env.local file.'
-              : 'Showing default location instead.'
-            }
-          </p>
-          {!error.includes('Mapbox access token') && (
-            <button
-              onClick={getUserLocation}
-              className="mt-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Try Location Again
-            </button>
-          )}
+          <p className="text-sm text-gray-600 mb-3">Showing default location instead.</p>
+          <button
+            onClick={getUserLocation}
+            className="mt-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Try Location Again
+          </button>
         </div>
       </div>
     );
