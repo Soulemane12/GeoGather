@@ -2,13 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Map from '../../components/Map';
-import EventSearch from '../../components/EventSearch';
 import type { NormalizedEvent } from '@/lib/types';
 
 export default function HomePage() {
-  const [events, setEvents] = useState<NormalizedEvent[]>([]);
-  const [userLocation, setUserLocation] = useState<{ city?: string; country?: string }>({});
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'pro' | 'premium'>('free');
   const [selectedEvent, setSelectedEvent] = useState<NormalizedEvent | null>(null);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
@@ -29,7 +25,7 @@ export default function HomePage() {
                 Map
               </Link>
               <Link href="/" className="text-gray-600 hover:text-blue-600 transition-colors">
-                Landing
+                Home
               </Link>
             </div>
           </div>
@@ -84,146 +80,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Event Discovery Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 min-h-screen">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Discover Amazing Events
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Search for events using natural language and explore them on our interactive map.
-            </p>
-          </div>
 
-          <div className="flex gap-8">
-            {/* Left Panel - Search */}
-            <div className={`bg-white rounded-2xl p-6 shadow-lg transition-all duration-300 ${
-              isSidePanelOpen ? 'w-1/3' : 'w-1/2'
-            }`}>
-              <h3 className="text-lg font-semibold mb-4 text-gray-900">Search Events</h3>
-              <EventSearch
-                onEventsFound={setEvents}
-                userCity={userLocation.city}
-                userCountry={userLocation.country}
-                plan={selectedPlan}
-                embedded={true}
-              />
-
-              {/* Results Summary */}
-              {events.length > 0 && (
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-gray-900">
-                        Found {events.length} events
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        Using {selectedPlan.toUpperCase()} plan • {selectedPlan === 'free' ? '5-mile' : selectedPlan === 'pro' ? '25-mile' : 'Unlimited'} radius
-                      </p>
-                    </div>
-                    <Link
-                      href="/map"
-                      className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Full Map →
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Map */}
-            <div className={`bg-white rounded-2xl p-6 shadow-lg transition-all duration-300 ${
-              isSidePanelOpen ? 'w-1/3' : 'w-1/2'
-            }`}>
-              <h3 className="text-lg font-semibold mb-4 text-gray-900">Event Map</h3>
-              <div className="h-96 rounded-xl overflow-hidden">
-                <Map
-                  className="w-full h-full"
-                  events={events}
-                  onLocationUpdate={setUserLocation}
-                  onEventSelect={(event) => {
-                    setSelectedEvent(event);
-                    setIsSidePanelOpen(true);
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Side Panel */}
-            {isSidePanelOpen && (
-              <div className="w-1/3 bg-white rounded-2xl p-6 shadow-lg transition-all duration-300">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Event Details</h3>
-                  <button
-                    onClick={() => setIsSidePanelOpen(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                {selectedEvent ? (
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-xl font-bold text-gray-900 mb-2">
-                        {selectedEvent.title}
-                      </h4>
-                      {selectedEvent.venue && (
-                        <p className="text-gray-600 flex items-center">
-                          <span className="mr-2">📍</span>
-                          {selectedEvent.venue}
-                        </p>
-                      )}
-                    </div>
-
-                    {selectedEvent.startsAt && (
-                      <div>
-                        <p className="text-sm text-gray-500 mb-1">Date & Time</p>
-                        <p className="text-gray-900">
-                          {new Date(selectedEvent.startsAt).toLocaleString(undefined, {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedEvent.description && (
-                      <div>
-                        <p className="text-sm text-gray-500 mb-1">Description</p>
-                        <p className="text-gray-700">{selectedEvent.description}</p>
-                      </div>
-                    )}
-
-                    {selectedEvent.url && (
-                      <div className="pt-4">
-                        <a
-                          href={selectedEvent.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors text-center block"
-                        >
-                          View Event Details →
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    Click on an event marker to view details
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
 
       {/* Features Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
@@ -483,6 +340,76 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Sample Events Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">
+            Upcoming Events
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                id: 'sample-event-1',
+                title: 'Summer Jazz Festival',
+                venue: 'Central Park Amphitheater',
+                startsAt: '2024-07-15T19:00:00Z',
+                description: 'An evening of smooth jazz featuring top local and international artists.',
+                url: 'https://example.com/jazz-festival',
+                source: 'ticketmaster' as const,
+                lat: 40.7829,
+                lng: -73.9654
+              },
+              {
+                id: 'sample-event-2',
+                title: 'Rock the Night Concert',
+                venue: 'Stadium Arena',
+                startsAt: '2024-08-22T20:30:00Z',
+                description: 'An epic night of rock music with legendary bands and emerging talents.',
+                url: 'https://example.com/rock-concert',
+                source: 'serpapi' as const,
+                lat: 40.7589,
+                lng: -73.9851
+              },
+              {
+                id: 'sample-event-3',
+                title: 'Comedy Extravaganza',
+                venue: 'City Comedy Club',
+                startsAt: '2024-06-10T21:00:00Z',
+                description: 'A night of non-stop laughter with top stand-up comedians from around the country.',
+                url: 'https://example.com/comedy-show',
+                source: 'serpapi' as const,
+                lat: 40.7484,
+                lng: -73.9857
+              }
+            ].map((event) => (
+              <div 
+                key={event.id} 
+                className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all cursor-pointer"
+                onClick={() => {
+                  setSelectedEvent(event);
+                  setIsSidePanelOpen(true);
+                }}
+              >
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
+                <p className="text-gray-600 mb-2 flex items-center">
+                  <span className="mr-2">📍</span>
+                  {event.venue}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {new Date(event.startsAt).toLocaleString(undefined, {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 to-purple-600">
         <div className="max-w-4xl mx-auto text-center">
@@ -500,6 +427,74 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* Side Panel */}
+      {isSidePanelOpen && selectedEvent && (
+        <div className="fixed top-0 right-0 w-1/3 h-full bg-white shadow-2xl z-50 p-6 overflow-y-auto">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Event Details</h3>
+            <button
+              onClick={() => {
+                setIsSidePanelOpen(false);
+                setSelectedEvent(null);
+              }}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-xl font-bold text-gray-900 mb-2">
+                {selectedEvent.title}
+              </h4>
+              {selectedEvent.venue && (
+                <p className="text-gray-600 flex items-center">
+                  <span className="mr-2">📍</span>
+                  {selectedEvent.venue}
+                </p>
+              )}
+            </div>
+
+            {selectedEvent.startsAt && (
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Date & Time</p>
+                <p className="text-gray-900">
+                  {new Date(selectedEvent.startsAt).toLocaleString(undefined, {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+            )}
+
+            {selectedEvent.description && (
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Description</p>
+                <p className="text-gray-700">{selectedEvent.description}</p>
+              </div>
+            )}
+
+            {selectedEvent.url && (
+              <div className="pt-4">
+                <a
+                  href={selectedEvent.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors text-center block"
+                >
+                  View Event Details →
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12 px-4 sm:px-6 lg:px-8">

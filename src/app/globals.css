@@ -7,13 +7,13 @@
 html, body {
   margin: 0 !important;
   padding: 0 !important;
-  overflow: hidden !important;
-  height: 100vh !important;
+  overflow-x: hidden !important;
+  min-height: 100vh !important;
   width: 100vw !important;
 }
 
 #__next {
-  height: 100vh !important;
+  min-height: 100vh !important;
   width: 100vw !important;
 }
 
