@@ -11,6 +11,7 @@
     "clean-dev": "./scripts/clean-dev.sh"
   },
   "dependencies": {
+    "@flowglad/nextjs": "^0.10.17",
     "@types/mapbox-gl": "^3.4.1",
     "mapbox-gl": "^3.14.0",
     "next": "15.5.2",
