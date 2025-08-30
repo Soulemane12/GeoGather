@@ -182,7 +182,7 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
       dot.style.width = '20px';
       dot.style.height = '20px';
       dot.style.borderRadius = '50%';
-      dot.style.backgroundColor = '#3B82F6';
+      dot.style.backgroundColor = '#10B981';
       dot.style.border = '3px solid #ffffff';
       dot.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
       new mapboxgl.Marker(dot).setLngLat([location.lng, location.lat]).addTo(map.current!);
