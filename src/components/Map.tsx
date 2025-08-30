@@ -191,7 +191,7 @@ export default function Map({ className = '' }: MapProps) {
         data: { type: 'FeatureCollection', features: [] },
         cluster: true,
         clusterRadius: 55,
-        clusterMaxZoom: 14
+        clusterMaxZoom: 22  // Increased to allow clustering at higher zoom levels
       });
 
       // ✅ FIXED: step() must be base, stop1,out1, stop2,out2, ...
@@ -204,10 +204,10 @@ export default function Map({ className = '' }: MapProps) {
           'circle-radius': [
             'step',
             ['get', 'point_count'],
-            14,   // base: <10
-            10, 18,
-            25, 22,
-            50, 28
+            16,   // base: <10 (increased from 14)
+            10, 20,  // increased from 18
+            25, 24,  // increased from 22
+            50, 30   // increased from 28
           ],
           'circle-color': [
             'step',
@@ -242,16 +242,16 @@ export default function Map({ className = '' }: MapProps) {
         source: EVENTS_SOURCE_ID,
         filter: ['!', ['has', 'point_count']],
         paint: {
-          'circle-radius': 7,
+          'circle-radius': 10,  // Increased from 7 for better visibility
           'circle-color': [
             'match',
             ['get', 'source'],
             'ticketmaster', '#F59E0B',   // amber
-            'eventbrite',   '#10B981',   // emerald
+            'serpapi',      '#10B981',   // emerald (updated from eventbrite)
             /* default */   '#3B82F6'    // blue
           ],
           'circle-stroke-color': '#FFFFFF',
-          'circle-stroke-width': 2
+          'circle-stroke-width': 3  // Increased from 2 for better visibility
         }
       });
 

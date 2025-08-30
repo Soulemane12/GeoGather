@@ -59,7 +59,7 @@ export async function POST(req: Request) {
       city: finalCity,
       country: finalCountry,
       when: serpWhen,
-      limit: 80,
+      limit: 100,  // Increased from 80 to get more events
       mapboxToken: MAPBOX_TOKEN,
     });
 
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
 
     const merged = dedupe([...tm, ...serp])
       .sort((a, b) => (a.startsAt || "").localeCompare(b.startsAt || ""))
-      .slice(0, 120);
+      .slice(0, 200);
 
     return NextResponse.json({ intent, events: merged });
   } catch (error) {
