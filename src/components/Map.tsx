@@ -61,6 +61,25 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
   const [error, setError] = useState<string | null>(null);
   const [city, setCity] = useState<string | undefined>(undefined);
   const [country, setCountry] = useState<string | undefined>(undefined);
+  const [selectedEvent, setSelectedEvent] = useState<NormalizedEvent | null>(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+
+  const closePanel = () => {
+    setIsPanelOpen(false);
+    setSelectedEvent(null);
+  };
+
+  // Handle ESC key to close panel
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isPanelOpen) {
+        closePanel();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isPanelOpen]);
 
   const getUserLocation = () => {
     setLoading(true);
@@ -281,35 +300,19 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
       map.current!.on('mouseenter', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = 'pointer'));
       map.current!.on('mouseleave', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = ''));
 
-      // click an unclustered event → popup
+      // click an unclustered event → open side panel
       map.current!.on('click', EVENTS_LAYER_ID, (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
         const f = e.features?.[0];
         if (!f) return;
-        const c = (f.geometry as unknown as { coordinates: [number, number] }).coordinates;
+
         const p = f.properties || {};
 
-        const dateHtml = p.startsAt
-          ? `<p class="text-xs text-gray-600 mb-1">📅 ${
-              new Date(String(p.startsAt)).toLocaleString(undefined, {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit'
-              })
-            }</p>`
-          : '';
-
-        const html = `
-          <div class="p-2 max-w-xs">
-            <h3 class="font-bold text-sm mb-1">${p.title || ''}</h3>
-            ${p.venue ? `<p class="text-xs text-gray-600 mb-1">📍 ${p.venue}</p>` : ''}
-            ${dateHtml}
-            ${p.url ? `<a href="${p.url}" target="_blank" class="text-blue-600 text-xs hover:underline">View Details →</a>` : ''}
-          </div>
-        `;
-
-        new mapboxgl.Popup({ offset: 12 }).setLngLat(c).setHTML(html).addTo(map.current!);
+        // Find the full event data from the events array
+        const event = events.find(ev => ev.id === p.id);
+        if (event) {
+          setSelectedEvent(event);
+          setIsPanelOpen(true);
+        }
       });
 
       map.current!.on('mouseenter', EVENTS_LAYER_ID, () => (map.current!.getCanvas().style.cursor = 'pointer'));
@@ -324,7 +327,7 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
         map.current = null;
       }
     };
-  }, [location]);
+  }, [location, events]);
 
   // Update the layer when events arrive
   useEffect(() => {
@@ -364,7 +367,101 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
 
   return (
     <div className={`relative ${className}`}>
-      <div ref={mapContainer} className="w-full h-full" />
+      {/* Map Container */}
+      <div
+        ref={mapContainer}
+        className={`h-full transition-all duration-300 ease-in-out ${
+          isPanelOpen ? 'w-full lg:w-2/3' : 'w-full'
+        }`}
+      />
+
+      {/* Side Panel */}
+      <div
+        className={`fixed top-0 right-0 h-full bg-white shadow-2xl border-l border-gray-200 transition-transform duration-300 ease-in-out z-50 ${
+          isPanelOpen ? 'translate-x-0' : 'translate-x-full'
+        } ${isPanelOpen ? 'w-full sm:w-96' : 'w-0'}`}
+      >
+        {selectedEvent && (
+          <div className="p-6 h-full overflow-y-auto">
+            {/* Close Button */}
+            <div className="flex justify-between items-start mb-4">
+              <h2 className="text-xl font-bold text-gray-900 pr-4">{selectedEvent.title}</h2>
+              <button
+                onClick={closePanel}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Event Details */}
+            <div className="space-y-4">
+              {selectedEvent.venue && (
+                <div className="flex items-start space-x-3">
+                  <span className="text-xl">📍</span>
+                  <div>
+                    <p className="font-medium text-gray-900">{selectedEvent.venue}</p>
+                    {selectedEvent.city && <p className="text-sm text-gray-600">{selectedEvent.city}</p>}
+                  </div>
+                </div>
+              )}
+
+              {selectedEvent.startsAt && (
+                <div className="flex items-start space-x-3">
+                  <span className="text-xl">📅</span>
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {new Date(selectedEvent.startsAt).toLocaleString(undefined, {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {selectedEvent.description && (
+                <div className="flex items-start space-x-3">
+                  <span className="text-xl">📝</span>
+                  <div>
+                    <p className="text-sm text-gray-700 leading-relaxed">{selectedEvent.description}</p>
+                  </div>
+                </div>
+              )}
+
+              {selectedEvent.url && (
+                <div className="pt-4 border-t border-gray-200">
+                  <a
+                    href={selectedEvent.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors w-full justify-center"
+                  >
+                    View Event Details
+                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Overlay for mobile */}
+      {isPanelOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={closePanel}
+        />
+      )}
     </div>
   );
 }
