@@ -287,25 +287,6 @@ export default function Map({ className = '' }: MapProps) {
       map.current!.on('mouseenter', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = 'pointer'));
       map.current!.on('mouseleave', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = ''));
 
-      // click an unclustered event → open side panel
-      map.current!.on('click', EVENTS_LAYER_ID, (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
-        const f = e.features?.[0];
-        if (!f) return;
-        const p = f.properties || {};
-        
-        // Find the corresponding event from our events array
-        const clickedEvent = events.find(event => 
-          event.title === p.title && 
-          event.venue === p.venue &&
-          event.startsAt === p.startsAt
-        );
-        
-        if (clickedEvent) {
-          setSelectedEvent(clickedEvent);
-          setIsPanelOpen(true);
-        }
-      });
-
       map.current!.on('mouseenter', EVENTS_LAYER_ID, () => (map.current!.getCanvas().style.cursor = 'pointer'));
       map.current!.on('mouseleave', EVENTS_LAYER_ID, () => (map.current!.getCanvas().style.cursor = ''));
 
@@ -326,6 +307,33 @@ export default function Map({ className = '' }: MapProps) {
       updateEventLayer(events);
     }
   }, [mapLoaded, events, updateEventLayer]);
+
+  // Add click handler for events
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    const clickHandler = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
+      e.preventDefault();
+      
+      const f = e.features?.[0];
+      if (!f) return;
+      const p = f.properties || {};
+      
+      // Find the corresponding event from our events array
+      const clickedEvent = events.find(event => 
+        event.title === p.title && 
+        event.venue === p.venue &&
+        event.startsAt === p.startsAt
+      );
+      
+      if (clickedEvent) {
+        setSelectedEvent(clickedEvent);
+        setIsPanelOpen(true);
+      }
+    };
+
+    map.current.on('click', EVENTS_LAYER_ID, clickHandler);
+  }, [mapLoaded, events]);
 
   if (loading) {
     return (
