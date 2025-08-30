@@ -21,7 +21,6 @@ async function reverseGeocodeCity(
   return { city, country };
 }
 
-// Get Mapbox access token from environment variable
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 interface MapProps {
@@ -31,44 +30,45 @@ interface MapProps {
 export default function Map({ className = '' }: MapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+
+  const [mapLoaded, setMapLoaded] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [events, setEvents] = useState<NormalizedEvent[]>([]);
-  const [eventMarkers, setEventMarkers] = useState<mapboxgl.Marker[]>([]);
   const [city, setCity] = useState<string | undefined>(undefined);
   const [country, setCountry] = useState<string | undefined>(undefined);
-  
+
+  // IMPORTANT: use a ref for markers to avoid render loops
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+
   const getUserLocation = () => {
     setLoading(true);
     setError(null);
-    
-    if (navigator.geolocation) {
-      const options = {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0
-      };
 
+    if (navigator.geolocation) {
+      const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
           console.log('Real location obtained:', { lat: latitude, lng: longitude });
-          
-          // Validate coordinates
-          if (latitude && longitude && 
-              latitude >= -90 && latitude <= 90 && 
-              longitude >= -180 && longitude <= 180) {
+
+          if (
+            typeof latitude === 'number' && typeof longitude === 'number' &&
+            latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180
+          ) {
             setLocation({ lat: latitude, lng: longitude });
             setLoading(false);
-            
-            // Reverse geocode to get city and country
-            reverseGeocodeCity(latitude, longitude, MAPBOX_ACCESS_TOKEN!)
-              .then(({ city, country }) => {
-                if (city) setCity(city);
-                if (country) setCountry(country);
-              })
-              .catch(() => {});
+
+            // reverse geocode city + country
+            if (MAPBOX_ACCESS_TOKEN) {
+              reverseGeocodeCity(latitude, longitude, MAPBOX_ACCESS_TOKEN)
+                .then(({ city, country }) => {
+                  if (city) setCity(city);
+                  if (country) setCountry(country);
+                })
+                .catch(() => {});
+            }
           } else {
             console.error('Invalid coordinates:', { lat: latitude, lng: longitude });
             setError('Invalid location coordinates received.');
@@ -79,54 +79,42 @@ export default function Map({ className = '' }: MapProps) {
           console.error('Geolocation error:', error);
           setError(`Location error: ${error.message}. Using default location.`);
           setLoading(false);
-          // Use a more recognizable default location (New York City)
-          setLocation({ lat: 40.7128, lng: -74.0060 });
+          setLocation({ lat: 40.7128, lng: -74.0060 }); // NYC
         },
         options
       );
     } else {
       setError('Geolocation is not supported by this browser.');
       setLoading(false);
-      setLocation({ lat: 40.7128, lng: -74.0060 });
+      setLocation({ lat: 40.7128, lng: -74.0060 }); // NYC
     }
   };
 
-  useEffect(() => {
-    getUserLocation();
-  }, []);
+  useEffect(() => { getUserLocation(); }, []);
 
   const handleEventsFound = (newEvents: NormalizedEvent[]) => {
     setEvents(newEvents);
     console.log(`Found ${newEvents.length} events`);
   };
 
-
-
+  // Add markers + fit bounds (uses refs, so it won't cause re-renders)
   const addEventMarkers = useCallback((eventsToAdd: NormalizedEvent[]) => {
     if (!map.current) return;
 
-    // clear old
-    eventMarkers.forEach(m => m.remove());
-    const newMarkers: mapboxgl.Marker[] = [];
+    // clear old markers
+    markersRef.current.forEach(m => m.remove());
+    markersRef.current = [];
 
-    // build bounds
     const bounds = new mapboxgl.LngLatBounds();
+    let valid = 0;
 
-    console.log('Processing events:', eventsToAdd.length);
-    let validEvents = 0;
-    
-    eventsToAdd.forEach((event, index) => {
-      console.log(`Event ${index}:`, { title: event.title, lat: event.lat, lng: event.lng });
-      
-      if (typeof event.lat === 'number' && typeof event.lng === 'number' && 
-          !isNaN(event.lat) && !isNaN(event.lng) &&
-          event.lat >= -90 && event.lat <= 90 && 
-          event.lng >= -180 && event.lng <= 180) {
-        
-        validEvents++;
-        console.log(`✅ Valid event ${index}: ${event.title} at [${event.lng}, ${event.lat}]`);
-        
-        // marker DOM
+    eventsToAdd.forEach((event) => {
+      if (
+        typeof event.lat === 'number' && typeof event.lng === 'number' &&
+        !Number.isNaN(event.lat) && !Number.isNaN(event.lng) &&
+        event.lat >= -90 && event.lat <= 90 && event.lng >= -180 && event.lng <= 180
+      ) {
+        valid++;
         const el = document.createElement('div');
         el.className = 'event-marker';
         el.style.width = '24px';
@@ -142,7 +130,7 @@ export default function Map({ className = '' }: MapProps) {
         el.style.fontSize = '12px';
         el.textContent = '🎵';
 
-        const popupHtml = `
+        const html = `
           <div class="p-2 max-w-xs">
             <h3 class="font-bold text-sm mb-1">${event.title}</h3>
             ${event.venue ? `<p class="text-xs text-gray-600 mb-1">📍 ${event.venue}</p>` : ''}
@@ -153,68 +141,47 @@ export default function Map({ className = '' }: MapProps) {
 
         const marker = new mapboxgl.Marker(el)
           .setLngLat([event.lng, event.lat])
-          .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(popupHtml))
+          .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(html))
           .addTo(map.current!);
 
-        newMarkers.push(marker);
+        markersRef.current.push(marker);
         bounds.extend([event.lng, event.lat]);
-      } else {
-        console.log(`❌ Invalid event ${index}: ${event.title} - missing or invalid coordinates`);
       }
     });
-    
-    console.log(`Valid events with coordinates: ${validEvents}/${eventsToAdd.length}`);
 
-    // also include the user location so it stays in view
     if (location) bounds.extend([location.lng, location.lat]);
 
-    // apply bounds if we have anything
     if (!bounds.isEmpty()) {
-      console.log('Fitting bounds:', bounds.toArray());
+      console.log(`Added ${valid} event markers; fitting bounds…`);
       map.current.fitBounds(bounds, { padding: 80, duration: 800 });
     } else {
-      console.log('No valid bounds to fit - no events with coordinates');
+      console.log('No valid event coordinates to fit.');
     }
+  }, [location]);
 
-    setEventMarkers(newMarkers);
-    console.log(`Added ${newMarkers.length} event markers to map and fit bounds`);
-  }, [eventMarkers, location]);
-
+  // Create the map once we have a location
   useEffect(() => {
     if (!location || !mapContainer.current || map.current) return;
 
-    console.log('Creating map with location:', location);
-
-    // Check if Mapbox token is available
     if (!MAPBOX_ACCESS_TOKEN) {
-      setError('Mapbox access token is not configured. Please add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to your .env.local file.');
+      setError('Mapbox access token is not configured. Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to .env.local');
       return;
     }
 
-
-
-    // Initialize map
     mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
-    
+
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12', // Use streets style to avoid warnings
+      style: 'mapbox://styles/mapbox/streets-v12', // simpler for debugging
       center: [location.lng, location.lat],
       zoom: 12
     });
 
-    // Wait for map to load before adding marker
     map.current.on('load', () => {
-      console.log('Map loaded, adding marker at coordinates:', [location.lng, location.lat]);
-      
-      // Add navigation controls
+      setMapLoaded(true);
       map.current!.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-      // Ensure the map is centered on the location
-      map.current!.setCenter([location.lng, location.lat]);
-      map.current!.setZoom(14);
-
-      // Add a simple blue marker for the user's location
+      // user location marker
       const el = document.createElement('div');
       el.style.width = '20px';
       el.style.height = '20px';
@@ -222,33 +189,25 @@ export default function Map({ className = '' }: MapProps) {
       el.style.backgroundColor = '#3B82F6';
       el.style.border = '3px solid #ffffff';
       el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-      
-      new mapboxgl.Marker(el)
-        .setLngLat([location.lng, location.lat])
-        .addTo(map.current!);
-      
-      console.log('✅ Marker successfully added at:', [location.lng, location.lat]);
-      
-      // Add a test marker to verify markers work
-      new mapboxgl.Marker().setLngLat([location.lng + 0.01, location.lat + 0.01]).addTo(map.current!);
-      
+      new mapboxgl.Marker(el).setLngLat([location.lng, location.lat]).addTo(map.current!);
 
+      console.log('✅ Map loaded and user marker added');
     });
 
-    // Cleanup function
     return () => {
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
-      }
+      // cleanup markers + map on unmount
+      markersRef.current.forEach(m => m.remove());
+      markersRef.current = [];
+      if (map.current) { map.current.remove(); map.current = null; }
     };
-  }, [location]); // Remove clearEventMarkers dependency
+  }, [location]);
 
+  // Only add markers when we have events AND the style is loaded
   useEffect(() => {
-    if (events.length > 0 && map.current) {
+    if (mapLoaded && events.length > 0 && map.current) {
       addEventMarkers(events);
     }
-  }, [events, addEventMarkers]);
+  }, [mapLoaded, events, addEventMarkers]);
 
   if (loading) {
     return (
@@ -268,20 +227,12 @@ export default function Map({ className = '' }: MapProps) {
         <div className="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-600 mb-2">⚠️ {error}</p>
           <p className="text-sm text-gray-600 mb-3">Showing default location instead.</p>
-          <div className="space-x-2">
-            <button 
-              onClick={getUserLocation} 
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Try Location Again
-            </button>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Refresh Page
-            </button>
-          </div>
+          <button
+            onClick={getUserLocation}
+            className="mt-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Try Location Again
+          </button>
         </div>
       </div>
     );
@@ -289,16 +240,13 @@ export default function Map({ className = '' }: MapProps) {
 
   return (
     <>
-      <EventSearch 
+      <EventSearch
         onEventsFound={handleEventsFound}
         userCity={city}
         userCountry={country}
       />
       <div className={`relative ${className}`}>
-        <div 
-          ref={mapContainer} 
-          className="w-full h-full"
-        />
+        <div ref={mapContainer} className="w-full h-full" />
       </div>
     </>
   );
