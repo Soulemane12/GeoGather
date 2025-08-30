@@ -279,16 +279,38 @@ export default function Map({ className = '', events = [], onLocationUpdate }: M
       map.current!.on('mouseenter', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = 'pointer'));
       map.current!.on('mouseleave', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = ''));
 
+      console.log('Setting up click event for layer:', EVENTS_LAYER_ID);
+
       // click an unclustered event → popup
-      map.current!.on('click', EVENTS_LAYER_ID, (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
-        const f = e.features?.[0];
-        if (!f) return;
+      map.current!.on('click', (e: mapboxgl.MapMouseEvent) => {
+        console.log('Map click event triggered');
+
+        // Check if we clicked on an event feature
+        const features = map.current!.queryRenderedFeatures(e.point, {
+          layers: [EVENTS_LAYER_ID]
+        });
+
+        console.log('Queried features:', features);
+
+        if (features.length === 0) {
+          console.log('No event features found at click location');
+          return;
+        }
+
+        const f = features[0];
+        console.log('Clicked feature:', f);
 
         const p = f.properties || {};
+        console.log('Feature properties:', p);
 
         // Find the full event object from the events array
         const event = events.find(ev => ev.id === p.id);
-        if (!event) return;
+        console.log('Found event:', event);
+
+        if (!event) {
+          console.log('Event not found in events array');
+          return;
+        }
 
         // Create popup HTML
         const popupHtml = `
