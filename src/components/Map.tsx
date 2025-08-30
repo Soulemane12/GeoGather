@@ -108,7 +108,7 @@ export default function Map({ className = '' }: MapProps) {
     const bounds = new mapboxgl.LngLatBounds();
     let valid = 0;
 
-    eventsToAdd.forEach((event) => {
+    eventsToAdd.forEach((event, i) => {
       if (
         typeof event.lat === 'number' && typeof event.lng === 'number' &&
         !Number.isNaN(event.lat) && !Number.isNaN(event.lng) &&
