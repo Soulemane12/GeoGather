@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import EventSearch from './EventSearch';
+
 import type { NormalizedEvent } from '@/lib/types';
 import type { FeatureCollection, Point } from 'geojson';
 
@@ -28,6 +28,8 @@ const EVENTS_LAYER_ID = 'events-circle';
 
 interface MapProps {
   className?: string;
+  events?: NormalizedEvent[];
+  onLocationUpdate?: (location: { city?: string; country?: string }) => void;
 }
 
 function eventsToGeoJSON(events: NormalizedEvent[]): FeatureCollection<Point> {
@@ -49,7 +51,7 @@ function eventsToGeoJSON(events: NormalizedEvent[]): FeatureCollection<Point> {
   };
 }
 
-export default function Map({ className = '' }: MapProps) {
+export default function Map({ className = '', events = [], onLocationUpdate }: MapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
 
@@ -57,7 +59,6 @@ export default function Map({ className = '' }: MapProps) {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [events, setEvents] = useState<NormalizedEvent[]>([]);
   const [city, setCity] = useState<string | undefined>(undefined);
   const [country, setCountry] = useState<string | undefined>(undefined);
 
@@ -84,6 +85,7 @@ export default function Map({ className = '' }: MapProps) {
                 .then(({ city, country }) => {
                   if (city) setCity(city);
                   if (country) setCountry(country);
+                  onLocationUpdate?.({ city, country });
                 })
                 .catch(() => {});
             }
@@ -361,15 +363,8 @@ export default function Map({ className = '' }: MapProps) {
   }
 
   return (
-    <>
-      <EventSearch
-        onEventsFound={setEvents}
-        userCity={city}
-        userCountry={country}
-      />
-      <div className={`relative ${className}`}>
-        <div ref={mapContainer} className="w-full h-full" />
-      </div>
-    </>
+    <div className={`relative ${className}`}>
+      <div ref={mapContainer} className="w-full h-full" />
+    </div>
   );
 }
