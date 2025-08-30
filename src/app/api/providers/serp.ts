@@ -137,18 +137,31 @@ export async function fetchSerpEvents(opts: {
         }
       }
 
-      out.push({
-        id: ev?.event_id || ev?.id || link || title,
-        source: "serpapi",
-        title,
-        startsAt,
-        venue,
-        city: opts.city,
-        lat,
-        lng,
-        url: link || "",
-        description: ev?.description || undefined,
-      });
+      // Filter events to only include those in the specified city
+      const eventAddress = Array.isArray(ev?.address) ? ev.address.join(", ") : ev?.address || "";
+      const eventCity = ev?.venue?.name ? undefined : opts.city;
+      
+      // Check if the event is in the specified city or nearby
+      const isInCity = !opts.city || 
+        eventAddress.toLowerCase().includes(opts.city.toLowerCase()) ||
+        (ev?.venue?.name && ev.venue.name.toLowerCase().includes(opts.city.toLowerCase())) ||
+        // For NYC area, also include Manhattan events if searching in Brooklyn
+        (opts.city?.toLowerCase() === 'brooklyn' && eventAddress.toLowerCase().includes('new york'));
+
+      if (isInCity) {
+        out.push({
+          id: ev?.event_id || ev?.id || link || title,
+          source: "serpapi",
+          title,
+          startsAt,
+          venue,
+          city: eventCity,
+          lat,
+          lng,
+          url: link || "",
+          description: ev?.description || undefined,
+        });
+      }
     }
     return out;
   }
@@ -180,18 +193,28 @@ export async function fetchSerpEvents(opts: {
           }
         }
 
-        out.push({
-          id: ev.url || ev.title,
-          source: "serpapi",
-          title: ev.title,
-          startsAt: ev.startsAt,
-          venue: ev.venue,
-          city: opts.city,
-          lat,
-          lng,
-          url: ev.url,
-          description: undefined,
-        });
+        // Filter events to only include those in the specified city or nearby
+        const eventAddress = ev.address || "";
+        const isInCity = !opts.city || 
+          eventAddress.toLowerCase().includes(opts.city.toLowerCase()) ||
+          (ev.venue && ev.venue.toLowerCase().includes(opts.city.toLowerCase())) ||
+          // For NYC area, also include Manhattan events if searching in Brooklyn
+          (opts.city?.toLowerCase() === 'brooklyn' && eventAddress.toLowerCase().includes('new york'));
+
+        if (isInCity) {
+          out.push({
+            id: ev.url || ev.title,
+            source: "serpapi",
+            title: ev.title,
+            startsAt: ev.startsAt,
+            venue: ev.venue,
+            city: opts.city,
+            lat,
+            lng,
+            url: ev.url,
+            description: undefined,
+          });
+        }
 
         if (out.length >= limit) return out;
       }
