@@ -40,6 +40,7 @@ function eventsToGeoJSON(events: NormalizedEvent[]): FeatureCollection<Point> {
         type: 'Feature' as const,
         geometry: { type: 'Point' as const, coordinates: [e.lng as number, e.lat as number] },
         properties: {
+          id: e.id,                          // ✅ use id for precise lookup
           title: e.title || '',
           venue: e.venue || '',
           startsAt: e.startsAt || '',
@@ -61,6 +62,8 @@ export default function Map({ className = '' }: MapProps) {
   const [events, setEvents] = useState<NormalizedEvent[]>([]);
   const [city, setCity] = useState<string | undefined>(undefined);
   const [country, setCountry] = useState<string | undefined>(undefined);
+
+  // Panel state
   const [selectedEvent, setSelectedEvent] = useState<NormalizedEvent | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
@@ -73,8 +76,6 @@ export default function Map({ className = '' }: MapProps) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          console.log('Real location obtained:', { lat: latitude, lng: longitude });
-
           if (
             typeof latitude === 'number' && typeof longitude === 'number' &&
             latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180
@@ -91,13 +92,11 @@ export default function Map({ className = '' }: MapProps) {
                 .catch(() => {});
             }
           } else {
-            console.error('Invalid coordinates:', { lat: latitude, lng: longitude });
             setError('Invalid location coordinates received.');
             setLoading(false);
           }
         },
         (err) => {
-          console.error('Geolocation error:', err);
           setError(`Location error: ${err.message}. Using default location.`);
           setLoading(false);
           setLocation({ lat: 40.7128, lng: -74.0060 }); // NYC fallback
@@ -156,10 +155,7 @@ export default function Map({ className = '' }: MapProps) {
     console.log(`🟠 Plotted ${coords.length} points; ${unique.size} unique locations`);
   }, [location]);
 
-  const closePanel = () => {
-    setIsPanelOpen(false);
-    setSelectedEvent(null);
-  };
+
 
   // Create the map once we have a location
   useEffect(() => {
@@ -178,6 +174,9 @@ export default function Map({ className = '' }: MapProps) {
       center: [location.lng, location.lat],
       zoom: 12
     });
+
+    // Optional: avoid accidental extreme zooms on double click
+    map.current.doubleClickZoom.disable();
 
     map.current.on('load', () => {
       setMapLoaded(true);
@@ -199,10 +198,9 @@ export default function Map({ className = '' }: MapProps) {
         data: { type: 'FeatureCollection', features: [] },
         cluster: true,
         clusterRadius: 55,
-        clusterMaxZoom: 22  // Increased to allow clustering at higher zoom levels
+        clusterMaxZoom: 14 // keep clustering sane; prevents 22x “zoom to atom”
       });
 
-      // ✅ FIXED: step() must be base, stop1,out1, stop2,out2, ...
       map.current!.addLayer({
         id: `${EVENTS_LAYER_ID}-cluster`,
         type: 'circle',
@@ -212,10 +210,9 @@ export default function Map({ className = '' }: MapProps) {
           'circle-radius': [
             'step',
             ['get', 'point_count'],
-            16,   // base: <10 (increased from 14)
-            10, 20,  // increased from 18
-            25, 24,  // increased from 22
-            50, 30   // increased from 28
+            16, 10, 20,
+            25, 24,
+            50, 30
           ],
           'circle-color': [
             'step',
@@ -250,23 +247,23 @@ export default function Map({ className = '' }: MapProps) {
         source: EVENTS_SOURCE_ID,
         filter: ['!', ['has', 'point_count']],
         paint: {
-          'circle-radius': 10,  // Increased from 7 for better visibility
+          'circle-radius': 10,
           'circle-color': [
             'match',
             ['get', 'source'],
             'ticketmaster', '#F59E0B',   // amber
-            'serpapi',      '#10B981',   // emerald (updated from eventbrite)
+            'serpapi',      '#10B981',   // emerald
             /* default */   '#3B82F6'    // blue
           ],
           'circle-stroke-color': '#FFFFFF',
-          'circle-stroke-width': 3  // Increased from 2 for better visibility
+          'circle-stroke-width': 3
         }
       });
 
-      // click a cluster → zoom into it
-      map.current!.on('click', `${EVENTS_LAYER_ID}-cluster`, (e: mapboxgl.MapMouseEvent) => {
+      // click a cluster → zoom into it (but clamp the zoom)
+      const onClusterClick = (e: mapboxgl.MapMouseEvent) => {
         const features = map.current!.queryRenderedFeatures(e.point, { layers: [`${EVENTS_LAYER_ID}-cluster`] });
-        if (features.length === 0) return;
+        if (!features.length) return;
 
         const clusterId = features[0].properties?.cluster_id;
         if (clusterId === null || clusterId === undefined) return;
@@ -274,23 +271,19 @@ export default function Map({ className = '' }: MapProps) {
         const src = map.current!.getSource(EVENTS_SOURCE_ID) as mapboxgl.GeoJSONSource & {
           getClusterExpansionZoom: (id: number, cb: (err: Error | null, zoom: number) => void) => void
         };
-        src.getClusterExpansionZoom(clusterId, (err, zoom) => {
-          if (err || zoom === null || zoom === undefined) return;
-          map.current!.easeTo({
-            center: (features[0].geometry as unknown as { coordinates: [number, number] }).coordinates,
-            zoom,
-            duration: 500
-          });
+        src.getClusterExpansionZoom(clusterId, (err, targetZoom) => {
+          if (err || targetZoom === null || targetZoom === undefined) return;
+          const clamped = Math.min(targetZoom, 15); // ✅ prevent “zoom to oblivion”
+          const center = (features[0].geometry as unknown as { coordinates: [number, number] }).coordinates;
+          map.current!.easeTo({ center, zoom: clamped, duration: 500 });
         });
-      });
-
+      };
+      map.current!.on('click', `${EVENTS_LAYER_ID}-cluster`, onClusterClick);
       map.current!.on('mouseenter', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = 'pointer'));
       map.current!.on('mouseleave', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = ''));
 
       map.current!.on('mouseenter', EVENTS_LAYER_ID, () => (map.current!.getCanvas().style.cursor = 'pointer'));
       map.current!.on('mouseleave', EVENTS_LAYER_ID, () => (map.current!.getCanvas().style.cursor = ''));
-
-      console.log('✅ Map loaded, events layer (clustered) added, user marker added');
     });
 
     return () => {
@@ -308,31 +301,43 @@ export default function Map({ className = '' }: MapProps) {
     }
   }, [mapLoaded, events, updateEventLayer]);
 
-  // Add click handler for events
+  // Click unclustered event → open details panel (no zoom change)
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
 
     const clickHandler = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
       e.preventDefault();
-      
+      // extra safety to stop any bubbling weirdness
+      const originalEvent = (e as mapboxgl.MapMouseEvent & { originalEvent?: { stopPropagation?: () => void } }).originalEvent;
+      if (originalEvent?.stopPropagation) originalEvent.stopPropagation();
+
       const f = e.features?.[0];
       if (!f) return;
-      const p = f.properties || {};
-      
-      // Find the corresponding event from our events array
-      const clickedEvent = events.find(event => 
-        event.title === p.title && 
-        event.venue === p.venue &&
-        event.startsAt === p.startsAt
-      );
-      
-      if (clickedEvent) {
-        setSelectedEvent(clickedEvent);
+      const p = (f.properties || {}) as { id?: string; title?: string; venue?: string; startsAt?: string };
+      const id = typeof p.id === 'string' ? p.id : undefined;
+
+      // re-center slightly so the panel doesn’t cover the point
+      const coords = (f.geometry as unknown as { coordinates: [number, number] }).coordinates;
+      map.current!.easeTo({ center: coords, duration: 350 }); // keep current zoom
+
+      let ev: NormalizedEvent | undefined;
+      if (id) {
+        ev = events.find(e => e.id === id);
+      }
+      if (!ev) {
+        ev = events.find(e => e.title === p.title && e.venue === p.venue && e.startsAt === p.startsAt);
+      }
+
+      if (ev) {
+        setSelectedEvent(ev);
         setIsPanelOpen(true);
       }
     };
 
     map.current.on('click', EVENTS_LAYER_ID, clickHandler);
+    return () => {
+      map.current?.off('click', EVENTS_LAYER_ID, clickHandler);
+    };
   }, [mapLoaded, events]);
 
   if (loading) {
@@ -366,18 +371,27 @@ export default function Map({ className = '' }: MapProps) {
 
   return (
     <>
-      <EventSearch
-        onEventsFound={setEvents}
-        userCity={city}
-        userCountry={country}
-      />
       <div className={`relative ${className}`}>
+        {/* Map */}
         <div ref={mapContainer} className="w-full h-full" />
+
+        {/* Search card (solid, pretty) */}
+        <div className="absolute top-4 left-4 right-4 md:right-auto md:w-[520px] z-20">
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-xl p-3">
+            <EventSearch
+              onEventsFound={setEvents}
+              userCity={city}
+              userCountry={country}
+            />
+          </div>
+        </div>
       </div>
+
+      {/* Details side panel */}
       <EventDetailsPanel
         event={selectedEvent}
         isOpen={isPanelOpen}
-        onClose={closePanel}
+        onClose={() => setIsPanelOpen(false)}
       />
     </>
   );
