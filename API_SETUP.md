@@ -27,14 +27,13 @@ TICKETMASTER_API_KEY=your_ticketmaster_api_key_here
 - Used for: Event search and discovery
 - Free tier available
 
-### 4. **Eventbrite** (Optional)
+### 4. **Serp API** (Required)
 ```bash
-EVENTBRITE_TOKEN=your_eventbrite_token_here
-EVENTBRITE_ORG_ID=your_organization_id_here
+SERPAPI_API_KEY=your_serp_api_key_here
 ```
-- Get from: https://www.eventbrite.com/platform/api-keys
-- Used for: Organization-specific events
-- Only needed if you want to include your own events
+- Get from: https://serpapi.com/
+- Used for: Google Events search and discovery
+- Free tier available
 
 ## Complete `.env.local` Example:
 
@@ -48,9 +47,8 @@ GROQ_API_KEY=gsk_your_groq_key_here
 # Ticketmaster (Required)
 TICKETMASTER_API_KEY=your_ticketmaster_key_here
 
-# Eventbrite (Optional)
-EVENTBRITE_TOKEN=your_eventbrite_token_here
-EVENTBRITE_ORG_ID=your_org_id_here
+# Serp API (Required)
+SERPAPI_API_KEY=your_serp_api_key_here
 ```
 
 ## Features:
@@ -62,7 +60,7 @@ EVENTBRITE_ORG_ID=your_org_id_here
 
 ### 🎫 **Multi-Platform Events**
 - **Ticketmaster**: Public events, concerts, sports, theater
-- **Eventbrite**: Organization-specific events (if configured)
+- **Serp API**: Google Events search for comprehensive event discovery
 - Automatic deduplication and sorting
 
 ### 🗺️ **Interactive Map**

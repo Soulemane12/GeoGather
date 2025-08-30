@@ -125,9 +125,9 @@ export default function Map({ className = '' }: MapProps) {
     console.log('GeoJSON feature count:', fc.features.length);
 
     // quick visibility/debug by source
-    const ebCount = evs.filter(e => e.source === 'eventbrite' && typeof e.lat === 'number' && typeof e.lng === 'number').length;
+    const serpCount = evs.filter(e => e.source === 'serpapi' && typeof e.lat === 'number' && typeof e.lng === 'number').length;
     const tmCount = evs.filter(e => e.source === 'ticketmaster' && typeof e.lat === 'number' && typeof e.lng === 'number').length;
-    console.log(`By source → Eventbrite: ${ebCount}, Ticketmaster: ${tmCount}`);
+    console.log(`By source → Serp API: ${serpCount}, Ticketmaster: ${tmCount}`);
 
     const coords = fc.features.map(f => f.geometry.coordinates as [number, number]);
 

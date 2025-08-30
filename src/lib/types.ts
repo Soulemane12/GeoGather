@@ -7,7 +7,7 @@ export type Intent = {
 
 export type NormalizedEvent = {
   id: string;
-  source: "ticketmaster" | "eventbrite";
+  source: "ticketmaster" | "serpapi";
   title: string;
   startsAt?: string;
   venue?: string;
