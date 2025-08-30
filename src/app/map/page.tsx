@@ -34,14 +34,14 @@ export default function MapPage() {
       </nav>
 
       {/* Map Container */}
-      <div className="pt-16">
-        <Map 
-          className="w-full h-full" 
-          events={events} 
+      <div className="absolute top-16 left-0 right-0 bottom-0">
+        <Map
+          className="w-full h-full"
+          events={events}
           onLocationUpdate={setUserLocation}
         />
-        <EventSearch 
-          onEventsFound={setEvents} 
+        <EventSearch
+          onEventsFound={setEvents}
           userCity={userLocation.city}
           userCountry={userLocation.country}
         />
