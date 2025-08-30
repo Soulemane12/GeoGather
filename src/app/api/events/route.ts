@@ -61,10 +61,10 @@ export async function POST(req: Request) {
     const [tm, eb] = await Promise.all([tmP, ebP]);
     console.log('Results:', { ticketmaster: tm.length, eventbrite: eb.length });
 
-    // 3) Merge, dedupe, sort by date
-    const merged = dedupe([...tm, ...eb]).sort((a, b) =>
-      (a.startsAt || "").localeCompare(b.startsAt || "")
-    );
+    // 3) Merge, dedupe, sort by date, and limit to 50 events
+    const merged = dedupe([...tm, ...eb])
+      .sort((a, b) => (a.startsAt || "").localeCompare(b.startsAt || ""))
+      .slice(0, 50); // Limit to 50 events for performance
 
     console.log('Final merged results:', merged.length);
     return NextResponse.json({

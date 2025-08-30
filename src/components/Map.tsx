@@ -156,7 +156,7 @@ export default function Map({ className = '' }: MapProps) {
   }, [clearEventMarkers]);
 
   useEffect(() => {
-    if (!location || !mapContainer.current) return;
+    if (!location || !mapContainer.current || map.current) return;
 
     console.log('Creating map with location:', location);
 
@@ -164,12 +164,6 @@ export default function Map({ className = '' }: MapProps) {
     if (!MAPBOX_ACCESS_TOKEN) {
       setError('Mapbox access token is not configured. Please add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to your .env.local file.');
       return;
-    }
-
-    // Clean up existing map
-    if (map.current) {
-      map.current.remove();
-      map.current = null;
     }
 
 
@@ -222,16 +216,15 @@ export default function Map({ className = '' }: MapProps) {
 
     // Cleanup function
     return () => {
-      clearEventMarkers();
       if (map.current) {
         map.current.remove();
         map.current = null;
       }
     };
-  }, [location, clearEventMarkers]);
+  }, [location]); // Remove clearEventMarkers dependency
 
   useEffect(() => {
-    if (events.length > 0 && map.current) {
+    if (events.length > 0 && map.current && map.current.isStyleLoaded()) {
       addEventMarkers(events);
     }
   }, [events, addEventMarkers]);
