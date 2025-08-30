@@ -5,6 +5,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import EventSearch from './EventSearch';
 import type { NormalizedEvent } from '@/lib/types';
+import type { FeatureCollection, Point } from 'geojson';
 
 async function reverseGeocodeCity(
   lat: number,
@@ -16,15 +17,36 @@ async function reverseGeocodeCity(
   if (!res.ok) return {};
   const json = await res.json();
   const f = json?.features?.[0];
-  const city = f?.text;
-  const country = f?.context?.find((c: { id?: string }) => c.id?.startsWith("country"))?.short_code?.toUpperCase();
+  const city = f?.text as string | undefined;
+  const country = (f?.context?.find((c: { id?: string }) => c.id?.startsWith('country')) as any)?.short_code?.toUpperCase() as string | undefined;
   return { city, country };
 }
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+const EVENTS_SOURCE_ID = 'events';
+const EVENTS_LAYER_ID = 'events-circle';
 
 interface MapProps {
   className?: string;
+}
+
+function eventsToGeoJSON(events: NormalizedEvent[]): FeatureCollection<Point> {
+  return {
+    type: 'FeatureCollection',
+    features: events
+      .filter(e => typeof e.lat === 'number' && typeof e.lng === 'number')
+      .map(e => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [e.lng as number, e.lat as number] },
+        properties: {
+          title: e.title || '',
+          venue: e.venue || '',
+          startsAt: e.startsAt || '',
+          url: e.url || '',
+          source: e.source || ''
+        }
+      }))
+  };
 }
 
 export default function Map({ className = '' }: MapProps) {
@@ -38,9 +60,6 @@ export default function Map({ className = '' }: MapProps) {
   const [events, setEvents] = useState<NormalizedEvent[]>([]);
   const [city, setCity] = useState<string | undefined>(undefined);
   const [country, setCountry] = useState<string | undefined>(undefined);
-
-  // IMPORTANT: use a ref for markers to avoid render loops
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
 
   const getUserLocation = () => {
     setLoading(true);
@@ -60,7 +79,6 @@ export default function Map({ className = '' }: MapProps) {
             setLocation({ lat: latitude, lng: longitude });
             setLoading(false);
 
-            // reverse geocode city + country
             if (MAPBOX_ACCESS_TOKEN) {
               reverseGeocodeCity(latitude, longitude, MAPBOX_ACCESS_TOKEN)
                 .then(({ city, country }) => {
@@ -75,18 +93,18 @@ export default function Map({ className = '' }: MapProps) {
             setLoading(false);
           }
         },
-        (error) => {
-          console.error('Geolocation error:', error);
-          setError(`Location error: ${error.message}. Using default location.`);
+        (err) => {
+          console.error('Geolocation error:', err);
+          setError(`Location error: ${err.message}. Using default location.`);
           setLoading(false);
-          setLocation({ lat: 40.7128, lng: -74.0060 }); // NYC
+          setLocation({ lat: 40.7128, lng: -74.0060 }); // NYC fallback
         },
         options
       );
     } else {
       setError('Geolocation is not supported by this browser.');
       setLoading(false);
-      setLocation({ lat: 40.7128, lng: -74.0060 }); // NYC
+      setLocation({ lat: 40.7128, lng: -74.0060 }); // NYC fallback
     }
   };
 
@@ -97,72 +115,43 @@ export default function Map({ className = '' }: MapProps) {
     console.log(`Found ${newEvents.length} events`);
   };
 
-  // Add markers + fit bounds (uses refs, so it won't cause re-renders)
-  const addEventMarkers = useCallback((eventsToAdd: NormalizedEvent[]) => {
+  // Update GeoJSON source + fit bounds
+  const updateEventLayer = useCallback((evs: NormalizedEvent[]) => {
     if (!map.current) return;
 
-    // clear old markers
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
-
-    const bounds = new mapboxgl.LngLatBounds();
-    let valid = 0;
-
-    eventsToAdd.forEach((event, i) => {
-      if (
-        typeof event.lat === 'number' && typeof event.lng === 'number' &&
-        !Number.isNaN(event.lat) && !Number.isNaN(event.lng) &&
-        event.lat >= -90 && event.lat <= 90 && event.lng >= -180 && event.lng <= 180
-      ) {
-        valid++;
-        const el = document.createElement('div');
-        el.className = 'event-marker';
-        el.style.width = '24px';
-        el.style.height = '24px';
-        el.style.borderRadius = '50%';
-        el.style.backgroundColor = '#F59E0B';
-        el.style.border = '2px solid #ffffff';
-        el.style.cursor = 'pointer';
-        el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-        el.style.display = 'flex';
-        el.style.alignItems = 'center';
-        el.style.justifyContent = 'center';
-        el.style.fontSize = '12px';
-        el.textContent = '🎵';
-
-        const html = `
-          <div class="p-2 max-w-xs">
-            <h3 class="font-bold text-sm mb-1">${event.title}</h3>
-            ${event.venue ? `<p class="text-xs text-gray-600 mb-1">📍 ${event.venue}</p>` : ''}
-            ${event.startsAt ? `<p class="text-xs text-gray-600 mb-1">📅 ${new Date(event.startsAt).toLocaleString()}</p>` : ''}
-            <a href="${event.url}" target="_blank" class="text-blue-600 text-xs hover:underline">View Details →</a>
-          </div>
-        `;
-
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat([event.lng, event.lat])
-          .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(html))
-          .addTo(map.current!);
-
-        markersRef.current.push(marker);
-        bounds.extend([event.lng, event.lat]);
-      }
-    });
-
-    if (location) bounds.extend([location.lng, location.lat]);
-
-    if (!bounds.isEmpty()) {
-      const boundsArray = bounds.toArray();
-      console.log(`Added ${valid} event markers; fitting bounds:`, boundsArray);
-      console.log('Your location:', location ? [location.lng, location.lat] : 'null');
-      console.log('Bounds span:', {
-        latSpan: Math.abs(boundsArray[1][1] - boundsArray[0][1]),
-        lngSpan: Math.abs(boundsArray[1][0] - boundsArray[0][0])
-      });
-      map.current.fitBounds(bounds, { padding: 80, duration: 800 });
-    } else {
-      console.log('No valid event coordinates to fit.');
+    const src = map.current.getSource(EVENTS_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
+    if (!src) {
+      console.warn('Events source not ready yet');
+      return;
     }
+
+    const fc = eventsToGeoJSON(evs);
+    src.setData(fc);
+    console.log('GeoJSON feature count:', fc.features.length);
+
+    const coords = fc.features.map(f => f.geometry.coordinates as [number, number]);
+
+    if (coords.length === 0) {
+      // No events — optionally fly back to user location
+      if (location) {
+        map.current.easeTo({ center: [location.lng, location.lat], zoom: 13, duration: 600 });
+      }
+      return;
+    }
+
+    // Build bounds for all points (+ user)
+    const b = new mapboxgl.LngLatBounds(coords[0], coords[0]);
+    for (let i = 1; i < coords.length; i++) b.extend(coords[i]);
+    if (location) b.extend([location.lng, location.lat]);
+
+    const unique = new Set(coords.map(c => `${c[0].toFixed(5)},${c[1].toFixed(5)}`));
+    if (unique.size === 1) {
+      map.current.easeTo({ center: coords[0], zoom: 15, duration: 700 });
+    } else {
+      map.current.fitBounds(b, { padding: 80, duration: 800 });
+    }
+
+    console.log(`🟠 Plotted ${coords.length} points; ${unique.size} unique locations`);
   }, [location]);
 
   // Create the map once we have a location
@@ -187,33 +176,73 @@ export default function Map({ className = '' }: MapProps) {
       setMapLoaded(true);
       map.current!.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-      // user location marker
-      const el = document.createElement('div');
-      el.style.width = '20px';
-      el.style.height = '20px';
-      el.style.borderRadius = '50%';
-      el.style.backgroundColor = '#3B82F6';
-      el.style.border = '3px solid #ffffff';
-      el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-      new mapboxgl.Marker(el).setLngLat([location.lng, location.lat]).addTo(map.current!);
+      // user location marker (DOM is fine just for this one)
+      const dot = document.createElement('div');
+      dot.style.width = '20px';
+      dot.style.height = '20px';
+      dot.style.borderRadius = '50%';
+      dot.style.backgroundColor = '#3B82F6';
+      dot.style.border = '3px solid #ffffff';
+      dot.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+      new mapboxgl.Marker(dot).setLngLat([location.lng, location.lat]).addTo(map.current!);
 
-      console.log('✅ Map loaded and user marker added');
+      // ---- EVENTS SOURCE + LAYER ----
+      map.current!.addSource(EVENTS_SOURCE_ID, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+        // To enable clustering later:
+        // cluster: true, clusterRadius: 50
+      } as any);
+
+      map.current!.addLayer({
+        id: EVENTS_LAYER_ID,
+        type: 'circle',
+        source: EVENTS_SOURCE_ID,
+        paint: {
+          'circle-radius': 7,
+          'circle-color': '#F59E0B',
+          'circle-stroke-color': '#FFFFFF',
+          'circle-stroke-width': 2
+        }
+      });
+
+      // click → popup
+      map.current!.on('click', EVENTS_LAYER_ID, (e: any) => {
+        const f = e.features?.[0];
+        if (!f) return;
+        const c = f.geometry.coordinates.slice();
+        const p = f.properties || {};
+        const html = `
+          <div class="p-2 max-w-xs">
+            <h3 class="font-bold text-sm mb-1">${p.title || ''}</h3>
+            ${p.venue ? `<p class="text-xs text-gray-600 mb-1">📍 ${p.venue}</p>` : ''}
+            ${p.startsAt ? `<p class="text-xs text-gray-600 mb-1">📅 ${new Date(p.startsAt).toLocaleString()}</p>` : ''}
+            ${p.url ? `<a href="${p.url}" target="_blank" class="text-blue-600 text-xs hover:underline">View Details →</a>` : ''}
+          </div>
+        `;
+        new mapboxgl.Popup({ offset: 12 }).setLngLat(c).setHTML(html).addTo(map.current!);
+      });
+
+      map.current!.on('mouseenter', EVENTS_LAYER_ID, () => (map.current!.getCanvas().style.cursor = 'pointer'));
+      map.current!.on('mouseleave', EVENTS_LAYER_ID, () => (map.current!.getCanvas().style.cursor = ''));
+
+      console.log('✅ Map loaded, events layer added, user marker added');
     });
 
     return () => {
-      // cleanup markers + map on unmount
-      markersRef.current.forEach(m => m.remove());
-      markersRef.current = [];
-      if (map.current) { map.current.remove(); map.current = null; }
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
     };
   }, [location]);
 
-  // Only add markers when we have events AND the style is loaded
+  // Update the layer when events arrive
   useEffect(() => {
-    if (mapLoaded && events.length > 0 && map.current) {
-      addEventMarkers(events);
+    if (mapLoaded && map.current) {
+      updateEventLayer(events);
     }
-  }, [mapLoaded, events, addEventMarkers]);
+  }, [mapLoaded, events, updateEventLayer]);
 
   if (loading) {
     return (
