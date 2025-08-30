@@ -87,13 +87,9 @@ export async function fetchSerpEvents(opts: {
   if (!key) return [];
 
   const limit = Math.max(1, Math.min(opts.limit ?? 80, 120));
-  const location =
-    [opts.city, opts.country].filter(Boolean).join(", ") ||
-    opts.city ||
-    opts.country ||
-    undefined;
+  const location = opts.city || opts.country || undefined;
 
-  // Build a search query for the events engine
+  // Build a search query for Google Events
   const whenText = opts.when ? ` ${opts.when}` : "";
   const q = `${opts.q || ""}${whenText}`;
 
