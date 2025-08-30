@@ -14,9 +14,43 @@ function dedupe(events: NormalizedEvent[]) {
   return [...seen.values()];
 }
 
+function getPlanLimits(plan: string) {
+  switch (plan) {
+    case 'premium':
+      return { radiusMiles: null, maxEvents: null }; // unlimited
+    case 'pro':
+      return { radiusMiles: 25, maxEvents: 200 };
+    case 'free':
+    default:
+      return { radiusMiles: 5, maxEvents: 50 };
+  }
+}
+
+function filterEventsByRadius(events: NormalizedEvent[], centerLat: number, centerLng: number, radiusMiles: number | null) {
+  if (!radiusMiles) return events; // unlimited radius
+
+  const filtered = events.filter(event => {
+    if (!event.lat || !event.lng) return false;
+
+    // Calculate distance using Haversine formula
+    const R = 3959; // Earth's radius in miles
+    const dLat = (event.lat - centerLat) * Math.PI / 180;
+    const dLon = (event.lng - centerLng) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(centerLat * Math.PI / 180) * Math.cos(event.lat * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+
+    return distance <= radiusMiles;
+  });
+
+  return filtered;
+}
+
 export async function POST(req: Request) {
   try {
-    const { prompt, city, country } = await req.json();
+    const { prompt, city, country, plan = 'free' } = await req.json();
 
     if (!process.env.GROQ_API_KEY) {
       return NextResponse.json({ error: "API configuration error: GROQ_API_KEY not set" }, { status: 500 });
@@ -48,11 +82,14 @@ export async function POST(req: Request) {
 
     const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
 
+    // Get plan limits
+    const planLimits = getPlanLimits(plan);
+
     const tmP = fetchTicketmaster({
       keyword,
       city: finalCity,
       countryCode: finalCountry,
-      size: 150,
+      size: planLimits.maxEvents ? Math.min(150, planLimits.maxEvents * 2) : 150,
       maxPages: 3,
     });
 
@@ -61,17 +98,43 @@ export async function POST(req: Request) {
       city: finalCity,
       country: finalCountry,
       when: serpWhen,
-      limit: 100,
+      limit: planLimits.maxEvents ? Math.min(100, planLimits.maxEvents) : 100,
       mapboxToken: MAPBOX_TOKEN,
     });
 
     const [tm, serp] = await Promise.all([tmP, serpP]);
 
-    const merged = dedupe([...tm, ...serp])
-      .sort((a, b) => (a.startsAt || "").localeCompare(b.startsAt || ""))
-      .slice(0, 200);
+    let merged = dedupe([...tm, ...serp])
+      .sort((a, b) => (a.startsAt || "").localeCompare(b.startsAt || ""));
 
-    return NextResponse.json({ intent, events: merged });
+    // Apply plan-based limits
+    if (planLimits.maxEvents) {
+      merged = merged.slice(0, planLimits.maxEvents);
+    }
+
+    // Apply radius filtering if needed
+    if (planLimits.radiusMiles && merged.length > 0) {
+      // For radius filtering, we need the user's location
+      // Since we don't have exact coordinates, we'll filter based on city proximity
+      // This is a simplified approach - in production, you'd want exact coordinates
+      const cityEvents = merged.filter(event => {
+        const eventCity = event.city?.toLowerCase();
+        const searchCity = finalCity?.toLowerCase();
+        return eventCity === searchCity || !searchCity;
+      });
+
+      // If we have too few events after city filtering, include some nearby
+      if (cityEvents.length < merged.length * 0.5) {
+        merged = cityEvents;
+      }
+    }
+
+    return NextResponse.json({
+      intent,
+      events: merged,
+      plan: planLimits,
+      totalEvents: merged.length
+    });
   } catch (error) {
     console.error("Events API error:", error);
     return NextResponse.json(
