@@ -93,17 +93,15 @@ export async function fetchSerpEvents(opts: {
     opts.country ||
     undefined;
 
-  // Build a search query that nudges Google toward event-y pages
+  // Build a search query for the events engine
   const whenText = opts.when ? ` ${opts.when}` : "";
-  const locationText = location ? ` ${location}` : "";
-  const q = `${opts.q || ""}${whenText}${locationText} events tickets concerts shows`;
+  const q = `${opts.q || ""}${whenText}`;
 
   const params = new URLSearchParams({
-    engine: "google",
+    engine: "google_events",
     q,
     api_key: key,
     hl: "en",
-    num: "20",
   });
   if (location) params.set("location", location);
 
