@@ -3,18 +3,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ensure full screen coverage but allow scrolling */
+/* Ensure full screen coverage */
 html, body {
   margin: 0 !important;
   padding: 0 !important;
-  overflow-x: hidden;
-  overflow-y: auto;
-  min-height: 100vh !important;
+  overflow: hidden !important;
+  height: 100vh !important;
   width: 100vw !important;
 }
 
 #__next {
-  min-height: 100vh !important;
+  height: 100vh !important;
   width: 100vw !important;
 }
 
