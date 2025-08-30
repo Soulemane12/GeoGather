@@ -18,7 +18,7 @@ async function reverseGeocodeCity(
   const json = await res.json();
   const f = json?.features?.[0];
   const city = f?.text as string | undefined;
-  const country = (f?.context?.find((c: { id?: string }) => c.id?.startsWith('country')) as any)?.short_code?.toUpperCase() as string | undefined;
+  const country = (f?.context?.find((c: { id?: string }) => c.id?.startsWith('country')) as { short_code?: string } | undefined)?.short_code?.toUpperCase();
   return { city, country };
 }
 
@@ -35,17 +35,17 @@ function eventsToGeoJSON(events: NormalizedEvent[]): FeatureCollection<Point> {
     type: 'FeatureCollection',
     features: events
       .filter(e => typeof e.lat === 'number' && typeof e.lng === 'number')
-      .map(e => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [e.lng as number, e.lat as number] },
-        properties: {
-          title: e.title || '',
-          venue: e.venue || '',
-          startsAt: e.startsAt || '',
-          url: e.url || '',
-          source: e.source || ''
-        }
-      }))
+             .map(e => ({
+         type: 'Feature' as const,
+         geometry: { type: 'Point' as const, coordinates: [e.lng as number, e.lat as number] },
+         properties: {
+           title: e.title || '',
+           venue: e.venue || '',
+           startsAt: e.startsAt || '',
+           url: e.url || '',
+           source: e.source || ''
+         }
+       }))
   };
 }
 
@@ -192,7 +192,7 @@ export default function Map({ className = '' }: MapProps) {
         data: { type: 'FeatureCollection', features: [] }
         // To enable clustering later:
         // cluster: true, clusterRadius: 50
-      } as any);
+             });
 
       map.current!.addLayer({
         id: EVENTS_LAYER_ID,
@@ -206,12 +206,12 @@ export default function Map({ className = '' }: MapProps) {
         }
       });
 
-      // click → popup
-      map.current!.on('click', EVENTS_LAYER_ID, (e: any) => {
-        const f = e.features?.[0];
-        if (!f) return;
-        const c = f.geometry.coordinates.slice();
-        const p = f.properties || {};
+             // click → popup
+       map.current!.on('click', EVENTS_LAYER_ID, (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
+         const f = e.features?.[0];
+         if (!f) return;
+         const c = (f.geometry as unknown as { coordinates: [number, number] }).coordinates;
+         const p = f.properties || {};
         const html = `
           <div class="p-2 max-w-xs">
             <h3 class="font-bold text-sm mb-1">${p.title || ''}</h3>
