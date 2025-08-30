@@ -110,8 +110,6 @@ export default function Map({ className = '' }: MapProps) {
 
   useEffect(() => { getUserLocation(); }, []);
 
-  // Removed handleEventsFound since we're using setEvents directly
-
   // Update GeoJSON source + fit bounds
   const updateEventLayer = useCallback((evs: NormalizedEvent[]) => {
     if (!map.current) return;
@@ -125,6 +123,11 @@ export default function Map({ className = '' }: MapProps) {
     const fc = eventsToGeoJSON(evs);
     src.setData(fc);
     console.log('GeoJSON feature count:', fc.features.length);
+
+    // quick visibility/debug by source
+    const ebCount = evs.filter(e => e.source === 'eventbrite' && typeof e.lat === 'number' && typeof e.lng === 'number').length;
+    const tmCount = evs.filter(e => e.source === 'ticketmaster' && typeof e.lat === 'number' && typeof e.lng === 'number').length;
+    console.log(`By source → Eventbrite: ${ebCount}, Ticketmaster: ${tmCount}`);
 
     const coords = fc.features.map(f => f.geometry.coordinates as [number, number]);
 
@@ -163,7 +166,7 @@ export default function Map({ className = '' }: MapProps) {
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12', // simpler for debugging
+      style: 'mapbox://styles/mapbox/streets-v12',
       center: [location.lng, location.lat],
       zoom: 12
     });
@@ -189,9 +192,9 @@ export default function Map({ className = '' }: MapProps) {
         cluster: true,
         clusterRadius: 55,
         clusterMaxZoom: 14
-             });
+      });
 
-      // cluster bubbles
+      // ✅ FIXED: step() must be base, stop1,out1, stop2,out2, ...
       map.current!.addLayer({
         id: `${EVENTS_LAYER_ID}-cluster`,
         type: 'circle',
@@ -201,15 +204,18 @@ export default function Map({ className = '' }: MapProps) {
           'circle-radius': [
             'step',
             ['get', 'point_count'],
-            16,   10, 20,
-            25,   50, 28
+            14,   // base: <10
+            10, 18,
+            25, 22,
+            50, 28
           ],
           'circle-color': [
             'step',
             ['get', 'point_count'],
-            '#FED7AA', // 1-9
-            10, '#FDBA74', // 10-49
-            50, '#FB923C'  // 50+
+            '#FED7AA',     // <10
+            10, '#FDBA74', // 10–24
+            25, '#FB923C', // 25–49
+            50, '#F97316'  // 50+
           ],
           'circle-stroke-color': '#FFFFFF',
           'circle-stroke-width': 2
@@ -249,22 +255,26 @@ export default function Map({ className = '' }: MapProps) {
         }
       });
 
-             // click a cluster → zoom into it
-       map.current!.on('click', `${EVENTS_LAYER_ID}-cluster`, (e: mapboxgl.MapMouseEvent) => {
-         const features = map.current!.queryRenderedFeatures(e.point, { layers: [`${EVENTS_LAYER_ID}-cluster`] });
-         if (features.length === 0) return;
-         
-         const clusterId = features[0].properties?.cluster_id;
-         if (clusterId === null || clusterId === undefined) return;
-         
-         const src = map.current!.getSource(EVENTS_SOURCE_ID) as mapboxgl.GeoJSONSource & {
-           getClusterExpansionZoom: (id: number, cb: (err: Error | null, zoom: number) => void) => void
-         };
-         src.getClusterExpansionZoom(clusterId, (err, zoom) => {
-           if (err || zoom === null || zoom === undefined) return;
-           map.current!.easeTo({ center: (features[0].geometry as unknown as { coordinates: [number, number] }).coordinates, zoom, duration: 500 });
-         });
-       });
+      // click a cluster → zoom into it
+      map.current!.on('click', `${EVENTS_LAYER_ID}-cluster`, (e: mapboxgl.MapMouseEvent) => {
+        const features = map.current!.queryRenderedFeatures(e.point, { layers: [`${EVENTS_LAYER_ID}-cluster`] });
+        if (features.length === 0) return;
+
+        const clusterId = features[0].properties?.cluster_id;
+        if (clusterId === null || clusterId === undefined) return;
+
+        const src = map.current!.getSource(EVENTS_SOURCE_ID) as mapboxgl.GeoJSONSource & {
+          getClusterExpansionZoom: (id: number, cb: (err: Error | null, zoom: number) => void) => void
+        };
+        src.getClusterExpansionZoom(clusterId, (err, zoom) => {
+          if (err || zoom === null || zoom === undefined) return;
+          map.current!.easeTo({
+            center: (features[0].geometry as unknown as { coordinates: [number, number] }).coordinates,
+            zoom,
+            duration: 500
+          });
+        });
+      });
 
       map.current!.on('mouseenter', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = 'pointer'));
       map.current!.on('mouseleave', `${EVENTS_LAYER_ID}-cluster`, () => (map.current!.getCanvas().style.cursor = ''));
